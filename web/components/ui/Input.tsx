@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useId } from 'react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { THEMES } from '../../constants';
 
@@ -7,8 +7,11 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   error?: string;
 }
 
-export const Input: React.FC<InputProps> = ({ label, error, className = '', ...props }) => {
+export const Input: React.FC<InputProps> = ({ label, error, className = '', id, ...props }) => {
   const { style, mode } = useTheme();
+  const generatedId = useId();
+  const inputId = id || generatedId;
+  const errorId = `${inputId}-error`;
 
   let inputStyles = "w-full outline-none transition-all duration-200";
 
@@ -20,9 +23,15 @@ export const Input: React.FC<InputProps> = ({ label, error, className = '', ...p
 
   return (
     <div className="flex flex-col gap-1 w-full">
-      {label && <label className={`text-sm font-semibold ${style === THEMES.NEOBRUTALISM ? 'uppercase' : 'ml-1 opacity-80'}`}>{label}</label>}
-      <input className={`${inputStyles} ${className}`} {...props} />
-      {error && <span className="text-red-500 text-xs font-bold mt-1">{error}</span>}
+      {label && <label htmlFor={inputId} className={`text-sm font-semibold ${style === THEMES.NEOBRUTALISM ? 'uppercase' : 'ml-1 opacity-80'}`}>{label}</label>}
+      <input
+        id={inputId}
+        className={`${inputStyles} ${className}`}
+        aria-invalid={!!error}
+        aria-describedby={error ? errorId : undefined}
+        {...props}
+      />
+      {error && <span id={errorId} className="text-red-500 text-xs font-bold mt-1">{error}</span>}
     </div>
   );
 };
