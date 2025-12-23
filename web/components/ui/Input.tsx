@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useId } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { THEMES } from '../../constants';
@@ -11,6 +11,8 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
 export const Input: React.FC<InputProps> = ({ label, error, className = '', type, ...props }) => {
   const { style, mode } = useTheme();
   const [showPassword, setShowPassword] = useState(false);
+  const generatedId = useId();
+  const inputId = props.id || generatedId;
 
   const isPassword = type === 'password';
   const inputType = isPassword ? (showPassword ? 'text' : 'password') : type;
@@ -29,9 +31,10 @@ export const Input: React.FC<InputProps> = ({ label, error, className = '', type
 
   return (
     <div className="flex flex-col gap-1 w-full">
-      {label && <label className={`text-sm font-semibold ${style === THEMES.NEOBRUTALISM ? 'uppercase' : 'ml-1 opacity-80'}`}>{label}</label>}
+      {label && <label htmlFor={inputId} className={`text-sm font-semibold ${style === THEMES.NEOBRUTALISM ? 'uppercase' : 'ml-1 opacity-80'}`}>{label}</label>}
       <div className="relative">
         <input
+          id={inputId}
           type={inputType}
           className={`${inputStyles} ${className}`}
           {...props}
