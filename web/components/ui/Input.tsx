@@ -8,11 +8,11 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   error?: string;
 }
 
-export const Input: React.FC<InputProps> = ({ label, error, className = '', type, ...props }) => {
+export const Input: React.FC<InputProps> = ({ label, error, className = '', type, id, ...props }) => {
   const { style, mode } = useTheme();
   const [showPassword, setShowPassword] = useState(false);
   const generatedId = useId();
-  const inputId = props.id || generatedId;
+  const inputId = id || generatedId;
 
   const isPassword = type === 'password';
   const inputType = isPassword ? (showPassword ? 'text' : 'password') : type;
