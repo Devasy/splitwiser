@@ -251,8 +251,8 @@ export const Auth = () => {
                 </motion.div>
               )}
 
-              <Button type="submit" disabled={loading} className={`w-full py-4 text-lg ${isNeo ? 'rounded-none' : ''}`}>
-                {loading ? 'Processing...' : isLogin ? 'Log In' : 'Create Account'} <ArrowRight size={20} />
+              <Button type="submit" isLoading={loading} className={`w-full py-4 text-lg ${isNeo ? 'rounded-none' : ''}`}>
+                {isLogin ? 'Log In' : 'Create Account'} {!loading && <ArrowRight size={20} />}
               </Button>
             </form>
 
