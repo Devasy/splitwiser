@@ -13,6 +13,7 @@ export const Spinner: React.FC<SpinnerProps> = ({ className = '', size = 18, ari
       className={`animate-spin ${className}`}
       size={size}
       aria-label={ariaLabel}
+      role="status"
     />
   );
 };

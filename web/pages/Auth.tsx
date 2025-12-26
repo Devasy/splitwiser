@@ -3,6 +3,7 @@ import { ArrowRight, CreditCard, Sparkles } from 'lucide-react';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/Button';
+import { Spinner } from '../components/ui/Spinner';
 import { Input } from '../components/ui/Input';
 import { THEMES } from '../constants';
 import { useAuth } from '../contexts/AuthContext';
@@ -170,11 +171,7 @@ export const Auth = () => {
                 }`}
             >
               {googleLoading ? (
-                <div 
-                  className="w-5 h-5 border-2 border-black/20 border-t-black rounded-full animate-spin"
-                  role="status"
-                  aria-label="Signing in with Google"
-                />
+                <Spinner size={20} ariaLabel="Signing in with Google" />
               ) : (
                 <svg className="w-5 h-5" viewBox="0 0 24 24" role="img" aria-labelledby="google-logo-title">
                   <title id="google-logo-title">Google logo</title>
