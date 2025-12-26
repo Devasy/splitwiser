@@ -27,6 +27,12 @@ export const Button: React.FC<ButtonProps> = ({
     lg: "px-6 py-3 text-lg"
   };
 
+  const spinnerSizes = {
+    sm: 16,
+    md: 20,
+    lg: 24
+  };
+
   let themeStyles = "";
 
   if (style === THEMES.NEOBRUTALISM) {
@@ -53,7 +59,7 @@ export const Button: React.FC<ButtonProps> = ({
       disabled={isLoading || props.disabled}
       {...props}
     >
-      {isLoading && <Spinner className="mr-1" />}
+      {isLoading && <Spinner className="mr-1" size={spinnerSizes[size]} />}
       {children}
     </button>
   );
