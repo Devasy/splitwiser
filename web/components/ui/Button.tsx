@@ -1,10 +1,12 @@
 import React from 'react';
 import { THEMES } from '../../constants';
 import { useTheme } from '../../contexts/ThemeContext';
+import { Spinner } from './Spinner';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'danger' | 'ghost';
   size?: 'sm' | 'md' | 'lg';
+  isLoading?: boolean;
 }
 
 export const Button: React.FC<ButtonProps> = ({
@@ -12,6 +14,7 @@ export const Button: React.FC<ButtonProps> = ({
   variant = 'primary',
   size = 'md',
   className = '',
+  isLoading = false,
   ...props
 }) => {
   const { style } = useTheme();
@@ -47,8 +50,11 @@ export const Button: React.FC<ButtonProps> = ({
   return (
     <button
       className={`${baseStyles} ${sizeStyles[size]} ${themeStyles} ${className}`}
+      disabled={isLoading || props.disabled}
+      aria-busy={isLoading}
       {...props}
     >
+      {isLoading && <Spinner size={size === 'sm' ? 16 : 20} />}
       {children}
     </button>
   );
