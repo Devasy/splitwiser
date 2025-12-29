@@ -214,6 +214,7 @@ export const Auth = () => {
                     exit={{ height: 0, opacity: 0 }}
                   >
                     <Input
+                      label="Full Name"
                       placeholder="Full Name"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
@@ -225,6 +226,7 @@ export const Auth = () => {
               </AnimatePresence>
 
               <Input
+                label="Email Address"
                 type="email"
                 placeholder="Email Address"
                 value={email}
@@ -233,6 +235,7 @@ export const Auth = () => {
                 className={isNeo ? 'rounded-none' : ''}
               />
               <Input
+                label="Password"
                 type="password"
                 placeholder="Password"
                 value={password}
