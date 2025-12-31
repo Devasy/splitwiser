@@ -214,7 +214,8 @@ export const Auth = () => {
                     exit={{ height: 0, opacity: 0 }}
                   >
                     <Input
-                      placeholder="Full Name"
+                      label="Full Name"
+                      placeholder="e.g. John Doe"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       required
@@ -225,16 +226,18 @@ export const Auth = () => {
               </AnimatePresence>
 
               <Input
+                label="Email Address"
                 type="email"
-                placeholder="Email Address"
+                placeholder="e.g. john@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 className={isNeo ? 'rounded-none' : ''}
               />
               <Input
+                label="Password"
                 type="password"
-                placeholder="Password"
+                placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -251,8 +254,8 @@ export const Auth = () => {
                 </motion.div>
               )}
 
-              <Button type="submit" disabled={loading} className={`w-full py-4 text-lg ${isNeo ? 'rounded-none' : ''}`}>
-                {loading ? 'Processing...' : isLogin ? 'Log In' : 'Create Account'} <ArrowRight size={20} />
+              <Button type="submit" isLoading={loading} className={`w-full py-4 text-lg ${isNeo ? 'rounded-none' : ''}`}>
+                {isLogin ? 'Log In' : 'Create Account'} {!loading && <ArrowRight size={20} />}
               </Button>
             </form>
 
