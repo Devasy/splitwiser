@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
+import { Spinner } from '../components/ui/Spinner';
 import { THEMES } from '../constants';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -170,10 +171,10 @@ export const Auth = () => {
                 }`}
             >
               {googleLoading ? (
-                <div 
-                  className="w-5 h-5 border-2 border-black/20 border-t-black rounded-full animate-spin"
-                  role="status"
-                  aria-label="Signing in with Google"
+                <Spinner
+                  size={20}
+                  className={isNeo ? 'text-black' : 'text-gray-600'}
+                  ariaLabel="Signing in with Google"
                 />
               ) : (
                 <svg className="w-5 h-5" viewBox="0 0 24 24" role="img" aria-labelledby="google-logo-title">
@@ -251,8 +252,12 @@ export const Auth = () => {
                 </motion.div>
               )}
 
-              <Button type="submit" disabled={loading} className={`w-full py-4 text-lg ${isNeo ? 'rounded-none' : ''}`}>
-                {loading ? 'Processing...' : isLogin ? 'Log In' : 'Create Account'} <ArrowRight size={20} />
+              <Button
+                type="submit"
+                isLoading={loading}
+                className={`w-full py-4 text-lg ${isNeo ? 'rounded-none' : ''}`}
+              >
+                {isLogin ? 'Log In' : 'Create Account'} <ArrowRight size={20} />
               </Button>
             </form>
 
