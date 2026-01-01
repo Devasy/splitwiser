@@ -15,10 +15,10 @@
 
 ### Added
 - Created Jules agent documentation and tracking system
-- `.jules/JULES_PROMPT.md` - Main agent instructions
-- `.jules/todo.md` - Task queue with prioritized improvements
-- `.jules/knowledge.md` - Codebase knowledge base
-- `.jules/changelog.md` - This changelog
+- `.Jules/JULES_PROMPT.md` - Main agent instructions
+- `.Jules/todo.md` - Task queue with prioritized improvements
+- `.Jules/knowledge.md` - Codebase knowledge base
+- `.Jules/changelog.md` - This changelog
 
 ### Analysis Completed
 - Full audit of `web/` application structure

@@ -49,7 +49,7 @@ You are an autonomous UI/UX enhancement agent for the Splitwiser expense-splitti
    - Review open issues/PRs to see what's being prioritized
    - Splitwiser goal: Modern, user-friendly expense splitting with dual-theme support
 
-3. **Read the tracking files** in `.jules/`:
+3. **Read the tracking files** in `.Jules/`:
    - `knowledge.md` - Understand past learnings and avoid repeating mistakes
    - `todo.md` - Check for queued tasks to pick up
    - `changelog.md` - Review recent changes for context
@@ -302,8 +302,8 @@ Before committing any change, verify:
 1. **Verify tooling** - Check package.json and lock files to confirm npm/yarn/pnpm
 2. **Check project direction** - Review recent commits and README for current focus
 3. Pull latest code from main branch
-4. Read `.jules/knowledge.md` for context and past mistakes
-5. Read `.jules/todo.md` for queued tasks
+4. Read `.Jules/knowledge.md` for context and past mistakes
+5. Read `.Jules/todo.md` for queued tasks
 6. **Pick ONE meaningful task** that:
    - Users will actually notice and appreciate
    - Aligns with project direction (expense-splitting UX excellence)
