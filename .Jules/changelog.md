@@ -6,6 +6,9 @@
 
 ## [Unreleased]
 
+### Added
+- Dashboard skeleton loading state (`DashboardSkeleton`) to improve perceived performance during data fetch.
+
 ### Planned
 - See `todo.md` for queued tasks
 

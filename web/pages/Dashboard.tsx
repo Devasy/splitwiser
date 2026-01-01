@@ -1,6 +1,7 @@
 import { DollarSign, TrendingDown, TrendingUp } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Bar, BarChart, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { DashboardSkeleton } from '../components/skeletons/DashboardSkeleton';
 import { Card } from '../components/ui/Card';
 import { THEMES } from '../constants';
 import { useTheme } from '../contexts/ThemeContext';
@@ -26,7 +27,7 @@ export const Dashboard = () => {
     fetchSummary();
   }, []);
 
-  if (loading) return <div className="p-8">Loading stats...</div>;
+  if (loading) return <DashboardSkeleton />;
 
   const chartData = [
     { name: 'Owed To You', value: summary?.totalOwedToYou || 0, color: '#10b981' }, // emerald-500
