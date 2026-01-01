@@ -10,12 +10,10 @@
 
 ### Web
 
-- [ ] **[ux]** Complete skeleton loading system for Dashboard
-  - Files: `web/pages/Dashboard.tsx`, `web/components/ui/Skeleton.tsx`
-  - Context: Replace "Loading stats..." text with full skeleton for cards + chart
-  - Impact: Professional loading experience, reduces perceived wait time
-  - Size: ~40 lines
-  - Added: 2026-01-01
+- [x] **[ux]** Complete skeleton loading system for Dashboard
+  - Completed: 2026-01-01
+  - Files modified: `web/pages/Dashboard.tsx`, `web/components/skeletons/DashboardSkeleton.tsx`
+  - Impact: Professional loading experience that mimics actual content layout
 
 - [ ] **[ux]** Toast notification system for user actions
   - Files: Create `web/components/ui/Toast.tsx`, integrate into actions
