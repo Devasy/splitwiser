@@ -13,11 +13,12 @@ export const Spinner: React.FC<SpinnerProps> = ({
   ariaLabel = 'Loading'
 }) => {
   return (
-    <Loader2
-      size={size}
-      className={`animate-spin ${className}`}
-      aria-label={ariaLabel}
-      role="status"
-    />
+    <div role="status" aria-label={ariaLabel}>
+      <Loader2
+        size={size}
+        className={`animate-spin ${className}`}
+        aria-hidden="true"
+      />
+    </div>
   );
 };
