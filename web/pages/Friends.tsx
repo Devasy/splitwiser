@@ -226,7 +226,7 @@ export const Friends = () => {
           {filteredFriends.length === 0 && !error ? (
             <div className="col-span-full">
               <EmptyState
-                icon={<Users size={32} />}
+                icon={<Users size={32} aria-hidden="true" />}
                 title="No Friends Found"
                 description={searchTerm
                   ? `No friends match "${searchTerm}".`

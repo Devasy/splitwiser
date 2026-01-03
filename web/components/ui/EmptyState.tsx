@@ -39,7 +39,9 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
         ${className}
       `}
     >
-      <div className={`
+      <div
+        aria-hidden="true"
+        className={`
         mb-6 p-4 text-4xl
         ${isNeo
           ? 'bg-neo-second border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-none'

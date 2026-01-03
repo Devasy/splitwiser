@@ -211,7 +211,7 @@ export const Groups = () => {
         {!loading && filteredGroups.length === 0 && (
           <div className="col-span-full">
             <EmptyState
-              icon={<Users size={32} />}
+              icon={<Users size={32} aria-hidden="true" />}
               title="No Groups Found"
               description={searchTerm
                 ? `No groups match "${searchTerm}". Try a different search term.`
