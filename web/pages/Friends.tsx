@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowRight, Search, TrendingDown, TrendingUp, Users } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { EmptyState } from '../components/ui/EmptyState';
 import { THEMES } from '../constants';
 import { useTheme } from '../contexts/ThemeContext';
 import { getFriendsBalance, getGroups } from '../services/api';
@@ -223,14 +224,15 @@ export const Friends = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-start">
         <AnimatePresence mode='popLayout'>
           {filteredFriends.length === 0 && !error ? (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="col-span-full text-center py-20 opacity-50"
-            >
-              <Users size={48} className="mx-auto mb-4 opacity-50" />
-              <p className="text-xl font-bold">No friends found</p>
-            </motion.div>
+            <div className="col-span-full">
+              <EmptyState
+                icon={<Users size={32} />}
+                title="No Friends Found"
+                description={searchTerm
+                  ? `No friends match "${searchTerm}".`
+                  : "You don't have any friends with active balances. Friends appear here once you share expenses in a group."}
+              />
+            </div>
           ) : (
             filteredFriends.map((friend, index) => (
               <motion.div
