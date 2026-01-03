@@ -29,8 +29,8 @@
   - Size: ~50 lines
   - Added: 2026-01-01
 
-- [ ] **[ux]** Comprehensive empty states with illustrations
-  - Files: `web/pages/Groups.tsx`, `web/pages/Friends.tsx`, `web/pages/Dashboard.tsx`
+- [x] **[ux]** Comprehensive empty states with illustrations
+  - Files: `web/pages/Groups.tsx`, `web/pages/Friends.tsx`
   - Context: Create illustrated empty states with CTAs (not just text)
   - Impact: Guides new users, makes app feel polished
   - Size: ~70 lines
@@ -150,12 +150,9 @@
 
 ## ✅ Completed Tasks
 
-_No tasks completed yet. Move tasks here after completion._
+- [x] **[ux]** Comprehensive empty states with illustrations
+  - Completed: 2026-01-01
+  - Files modified: `web/components/ui/EmptyState.tsx`, `web/pages/Groups.tsx`, `web/pages/Friends.tsx`
+  - Impact: Users now see a polished, illustrated empty state with clear CTAs when they have no groups or friends, instead of plain text.
 
-<!--
-Format:
-- [x] **[type]** Task description
-  - Completed: YYYY-MM-DD
-  - Files modified: list
-  - Impact: What users noticed
--->
+_No tasks completed yet. Move tasks here after completion._

@@ -3,6 +3,7 @@ import { ArrowRight, Plus, Search, TrendingDown, TrendingUp, Users } from 'lucid
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/Button';
+import { EmptyState } from '../components/ui/EmptyState';
 import { Input } from '../components/ui/Input';
 import { Modal } from '../components/ui/Modal';
 import { Skeleton } from '../components/ui/Skeleton';
@@ -208,10 +209,18 @@ export const Groups = () => {
         </AnimatePresence>
 
         {!loading && filteredGroups.length === 0 && (
-          <div className={`col-span-full py-20 text-center opacity-50 flex flex-col items-center justify-center border-2 border-dashed ${isNeo ? 'border-black rounded-none' : 'border-gray-500/30 rounded-3xl'}`}>
-            <Users size={48} className="mb-4 opacity-50" />
-            <h3 className="text-2xl font-bold">No groups found</h3>
-            <p>Create one or join an existing group to get started.</p>
+          <div className="col-span-full">
+            <EmptyState
+              icon={<Users size={32} aria-hidden="true" />}
+              title="No Groups Found"
+              description={searchTerm
+                ? `No groups match "${searchTerm}". Try a different search term.`
+                : "You haven't joined any groups yet. Create a new one or join with a code to start splitting expenses!"}
+              action={searchTerm ? undefined : {
+                label: "Create New Group",
+                onClick: () => setIsCreateModalOpen(true)
+              }}
+            />
           </div>
         )}
       </motion.div>
