@@ -15,12 +15,10 @@
   - Files modified: `web/pages/Dashboard.tsx`, `web/components/skeletons/DashboardSkeleton.tsx`
   - Impact: Professional loading experience that mimics actual content layout
 
-- [ ] **[ux]** Toast notification system for user actions
-  - Files: Create `web/components/ui/Toast.tsx`, integrate into actions
-  - Context: Show success/error toasts for create/delete actions (not alerts)
-  - Impact: Modern feedback without blocking user
-  - Size: ~80 lines
-  - Added: 2026-01-01
+- [x] **[ux]** Toast notification system for user actions
+  - Completed: 2026-01-01
+  - Files modified: `web/contexts/ToastContext.tsx`, `web/components/ui/Toast.tsx`, `web/App.tsx`, `web/pages/Auth.tsx`
+  - Impact: Modern feedback system that supports both themes
 
 - [ ] **[a11y]** Complete keyboard navigation for Groups page
   - File: `web/pages/Groups.tsx`
