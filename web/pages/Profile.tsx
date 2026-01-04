@@ -8,11 +8,13 @@ import { Modal } from '../components/ui/Modal';
 import { THEMES } from '../constants';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
+import { useToast } from '../contexts/ToastContext';
 import { updateProfile } from '../services/api';
 
 export const Profile = () => {
     const { user, logout, updateUserInContext } = useAuth();
     const { style } = useTheme();
+    const { addToast } = useToast();
     const navigate = useNavigate();
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -68,9 +70,11 @@ export const Profile = () => {
                 updateUserInContext(updatedUser);
             }
             setIsEditModalOpen(false);
+            addToast('Profile updated successfully!', 'success');
         } catch (error) {
             console.error('Failed to update profile:', error);
             setSaveError('Failed to update profile. Please try again.');
+            addToast('Failed to update profile', 'error');
         } finally {
             setIsSaving(false);
         }
