@@ -7,9 +7,10 @@ import { THEMES } from '../../constants';
 
 const ToastItem: React.FC<{ toast: Toast }> = ({ toast }) => {
   const { removeToast } = useToast();
-  const { style } = useTheme();
+  const { style, mode } = useTheme();
 
   const isNeo = style === THEMES.NEOBRUTALISM;
+  const isDark = mode === 'dark';
 
   const icons = {
     success: <CheckCircle className="w-5 h-5" />,
@@ -20,13 +21,13 @@ const ToastItem: React.FC<{ toast: Toast }> = ({ toast }) => {
   const colors = {
     success: isNeo
       ? 'bg-[#00cc88] text-black border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-none'
-      : 'bg-green-500/90 text-white backdrop-blur-md shadow-lg rounded-lg border border-white/20',
+      : `bg-green-500/90 text-white backdrop-blur-md shadow-lg rounded-lg border ${isDark ? 'border-green-500/30' : 'border-white/20'}`,
     error: isNeo
       ? 'bg-[#ff5555] text-black border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-none'
-      : 'bg-red-500/90 text-white backdrop-blur-md shadow-lg rounded-lg border border-white/20',
+      : `bg-red-500/90 text-white backdrop-blur-md shadow-lg rounded-lg border ${isDark ? 'border-red-500/30' : 'border-white/20'}`,
     info: isNeo
       ? 'bg-[#8855ff] text-white border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-none'
-      : 'bg-blue-500/90 text-white backdrop-blur-md shadow-lg rounded-lg border border-white/20',
+      : `bg-blue-500/90 text-white backdrop-blur-md shadow-lg rounded-lg border ${isDark ? 'border-blue-500/30' : 'border-white/20'}`,
   };
 
   return (
