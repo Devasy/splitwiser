@@ -16,8 +16,8 @@ web/
 ├── App.tsx           # Main router with protected routes
 ├── components/
 │   ├── layout/       # Layout, Sidebar, ThemeWrapper
-│   └── ui/           # Reusable: Button, Card, Input, Modal, Skeleton
-├── contexts/         # AuthContext, ThemeContext
+│   └── ui/           # Reusable: Button, Card, Input, Modal, Skeleton, Toast
+├── contexts/         # AuthContext, ThemeContext, ToastContext
 ├── pages/            # Route pages
 ├── services/         # API calls
 ├── constants.ts      # Theme constants (GLASSMORPHISM, NEOBRUTALISM)
@@ -38,6 +38,7 @@ mobile/
 ├── context/          # AuthContext
 ├── api/              # API client and service functions
 └── utils/            # Helpers (currency, balance calculations)
+```
 
 ---
 
@@ -85,6 +86,21 @@ colors: {
 ---
 
 ## Component Patterns
+
+### Toast Notifications
+
+**Date:** 2026-01-01
+**Context:** Implemented Toast system
+
+Use `useToast` hook to trigger notifications:
+
+```tsx
+import { useToast } from '../contexts/ToastContext';
+
+const { addToast } = useToast();
+addToast('Success message', 'success'); // Defaults to 3000ms
+addToast('Error message', 'error', 5000);
+```
 
 ### Button Component Variants
 
@@ -197,6 +213,15 @@ interface BalanceSummary {
 ---
 
 ## Known Issues & Gotchas
+
+### Directory Casing
+
+**Date:** 2026-01-01
+**Context:** Admin tools failed to list files
+
+The tracking directory is named `.Jules` (Capital J), not `.jules`.
+- Correct: `.Jules/todo.md`
+- Incorrect: `.jules/todo.md`
 
 ### Image URL Validation
 

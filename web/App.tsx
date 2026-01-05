@@ -2,8 +2,10 @@ import React from 'react';
 import { HashRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { Layout } from './components/layout/Layout';
 import { ThemeWrapper } from './components/layout/ThemeWrapper';
+import { ToastContainer } from './components/ui/Toast';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { ToastProvider } from './contexts/ToastContext';
 import { Auth } from './pages/Auth';
 import { Dashboard } from './pages/Dashboard';
 import { Friends } from './pages/Friends';
@@ -46,11 +48,14 @@ const AppRoutes = () => {
 const App = () => {
   return (
     <ThemeProvider>
-      <AuthProvider>
-        <HashRouter>
+      <ToastProvider>
+        <AuthProvider>
+          <HashRouter>
             <AppRoutes />
-        </HashRouter>
-      </AuthProvider>
+            <ToastContainer />
+          </HashRouter>
+        </AuthProvider>
+      </ToastProvider>
     </ThemeProvider>
   );
 };

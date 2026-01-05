@@ -9,6 +9,12 @@
 ### Added
 - Dashboard skeleton loading state (`DashboardSkeleton`) to improve perceived performance during data fetch.
 - Comprehensive `EmptyState` component for Groups and Friends pages to better guide new users.
+- Global Toast notification system (`ToastContext` + `ToastContainer`) supporting both Glassmorphism and Neobrutalism themes.
+- Integrated toast notifications in `Auth.tsx` for login/signup errors and `GroupDetails.tsx` for expense/group actions.
+
+### Changed
+- Replaced native `alert()` calls in `GroupDetails.tsx` with toast notifications for a smoother UX.
+- Improved error handling in `Auth.tsx` to display backend error messages in toasts.
 
 ### Planned
 - See `todo.md` for queued tasks
@@ -39,34 +45,3 @@
 - `.jules/changelog.md`
 
 ---
-
-<!--
-## Template for future entries:
-
-## [YYYY-MM-DD] - vX.X.X
-
-### Added
-- New feature or component
-
-### Changed
-- Modifications to existing code
-
-### Fixed
-- Bug fixes
-
-### Improved
-- Performance or UX improvements
-
-### Deprecated
-- Features to be removed
-
-### Removed
-- Deleted code or features
-
-**Files Modified:**
-- `path/to/file1`
-- `path/to/file2`
-
-**Notes:**
-- Any additional context
--->
