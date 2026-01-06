@@ -9,6 +9,7 @@ import { Skeleton } from '../components/ui/Skeleton';
 import { THEMES } from '../constants';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
+import { useToast } from '../contexts/ToastContext';
 import {
     createExpense,
     createSettlement,
@@ -39,6 +40,7 @@ export const GroupDetails = () => {
     const navigate = useNavigate();
     const { user } = useAuth();
     const { style } = useTheme();
+    const { addToast } = useToast();
 
     const [group, setGroup] = useState<Group | null>(null);
     const [expenses, setExpenses] = useState<Expense[]>([]);
@@ -127,10 +129,11 @@ export const GroupDetails = () => {
             navigator.clipboard.writeText(group.joinCode)
                 .then(() => {
                     setCopied(true);
+                    addToast('Code copied to clipboard!', 'success');
                     setTimeout(() => setCopied(false), 2000);
                 })
                 .catch(() => {
-                    alert('Failed to copy to clipboard');
+                    addToast('Failed to copy code', 'error');
                 });
         }
     };
@@ -147,11 +150,11 @@ export const GroupDetails = () => {
                 });
             } catch (err) {
                 navigator.clipboard.writeText(text);
-                alert('Invite copied to clipboard!');
+                addToast('Invite copied to clipboard!', 'success');
             }
         } else {
             navigator.clipboard.writeText(text);
-            alert('Invite copied to clipboard!');
+            addToast('Invite copied to clipboard!', 'success');
         }
     };
 
@@ -207,22 +210,22 @@ export const GroupDetails = () => {
 
         if (splitType === SplitType.EQUAL) {
             const involvedMembers = members.filter(m => selectedUsers.has(m.userId));
-            if (involvedMembers.length === 0) return alert("Select at least one person.");
+            if (involvedMembers.length === 0) return addToast("Select at least one person.", 'error');
             const splitAmount = numAmount / involvedMembers.length;
             requestSplits = involvedMembers.map(m => ({ userId: m.userId, amount: splitAmount }));
         } else {
             const splitVals = Object.values(splitValues) as string[];
             if (unequalMode === 'amount') {
                 const sum = splitVals.reduce((acc, val) => acc + (parseFloat(val) || 0), 0);
-                if (Math.abs(sum - numAmount) > 0.01) return alert(`Amounts must match total.`);
+                if (Math.abs(sum - numAmount) > 0.01) return addToast(`Amounts must match total.`, 'error');
                 requestSplits = Object.entries(splitValues).map(([uid, val]) => ({ userId: uid, amount: parseFloat(val as string) || 0 }));
             } else if (unequalMode === 'percentage') {
                 const sum = splitVals.reduce((acc, val) => acc + (parseFloat(val) || 0), 0);
-                if (Math.abs(sum - 100) > 0.1) return alert(`Percentages must equal 100%.`);
+                if (Math.abs(sum - 100) > 0.1) return addToast(`Percentages must equal 100%.`, 'error');
                 requestSplits = Object.entries(splitValues).map(([uid, val]) => ({ userId: uid, amount: (numAmount * (parseFloat(val as string) || 0)) / 100 }));
             } else if (unequalMode === 'shares') {
                 const totalShares = splitVals.reduce((acc, val) => acc + (parseFloat(val) || 0), 0);
-                if (totalShares === 0) return alert("Total shares cannot be zero.");
+                if (totalShares === 0) return addToast("Total shares cannot be zero.", 'error');
                 requestSplits = Object.entries(splitValues).map(([uid, val]) => ({ userId: uid, amount: (numAmount * (parseFloat(val as string) || 0)) / totalShares }));
             }
         }
@@ -240,14 +243,16 @@ export const GroupDetails = () => {
         try {
             if (editingExpenseId) {
                 await updateExpense(id, editingExpenseId, payload);
+                addToast('Expense updated', 'success');
             } else {
                 await createExpense(id, payload);
+                addToast('Expense added', 'success');
             }
             setIsExpenseModalOpen(false);
             fetchData();
         } catch (err) {
             console.error(err);
-            alert('Error saving expense');
+            addToast('Error saving expense', 'error');
         }
     };
 
@@ -258,8 +263,9 @@ export const GroupDetails = () => {
                 await deleteExpense(id, editingExpenseId);
                 setIsExpenseModalOpen(false);
                 fetchData();
+                addToast('Expense deleted', 'success');
             } catch (err) {
-                alert("Failed to delete expense");
+                addToast("Failed to delete expense", 'error');
             }
         }
     };
@@ -270,11 +276,11 @@ export const GroupDetails = () => {
         
         const numAmount = parseFloat(paymentAmount);
         if (paymentPayerId === paymentPayeeId) {
-            alert('Payer and payee cannot be the same');
+            addToast('Payer and payee cannot be the same', 'error');
             return;
         }
         if (!numAmount || numAmount <= 0) {
-            alert('Please enter a valid amount');
+            addToast('Please enter a valid amount', 'error');
             return;
         }
         
@@ -287,8 +293,9 @@ export const GroupDetails = () => {
             setIsPaymentModalOpen(false);
             setPaymentAmount('');
             fetchData();
+            addToast('Payment recorded', 'success');
         } catch (err) {
-            alert("Failed to record payment");
+            addToast("Failed to record payment", 'error');
         }
     };
 
@@ -299,8 +306,9 @@ export const GroupDetails = () => {
             await updateGroup(id, { name: editGroupName });
             setIsSettingsModalOpen(false);
             fetchData();
+            addToast('Group updated', 'success');
         } catch (err) {
-            alert("Failed to update group");
+            addToast("Failed to update group", 'error');
         }
     };
 
@@ -309,9 +317,10 @@ export const GroupDetails = () => {
         if (window.confirm("Are you sure? This cannot be undone.")) {
             try {
                 await deleteGroup(id);
+                addToast('Group deleted', 'success');
                 navigate('/groups');
             } catch (err) {
-                alert("Failed to delete group");
+                addToast("Failed to delete group", 'error');
             }
         }
     };
@@ -321,10 +330,10 @@ export const GroupDetails = () => {
         if (window.confirm("You can only leave when your balances are settled. Continue?")) {
             try {
                 await leaveGroup(id);
-                alert('You have left the group');
+                addToast('You have left the group', 'success');
                 navigate('/groups');
             } catch (err: any) {
-                alert(err.response?.data?.detail || "Cannot leave - please settle balances first");
+                addToast(err.response?.data?.detail || "Cannot leave - please settle balances first", 'error');
             }
         }
     };
@@ -339,13 +348,14 @@ export const GroupDetails = () => {
                     s => (s.fromUserId === memberId || s.toUserId === memberId) && (s.amount || 0) > 0
                 );
                 if (hasUnsettled) {
-                    alert('Cannot remove: This member has unsettled balances in the group.');
+                    addToast('Cannot remove: This member has unsettled balances in the group.', 'error');
                     return;
                 }
                 await removeMember(id, memberId);
+                addToast('Member removed', 'success');
                 fetchData();
             } catch (err: any) {
-                alert(err.response?.data?.detail || "Failed to remove member");
+                addToast(err.response?.data?.detail || "Failed to remove member", 'error');
             }
         }
     };
