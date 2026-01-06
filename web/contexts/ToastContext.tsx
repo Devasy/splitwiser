@@ -27,13 +27,7 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const addToast = useCallback((message: string, type: ToastType = 'info', duration: number = 3000) => {
     const id = Math.random().toString(36).substr(2, 9);
     setToasts((prev) => [...prev, { id, message, type, duration }]);
-
-    if (duration > 0) {
-      setTimeout(() => {
-        removeToast(id);
-      }, duration);
-    }
-  }, [removeToast]);
+  }, []);
 
   return (
     <ToastContext.Provider value={{ toasts, addToast, removeToast }}>

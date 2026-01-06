@@ -5,12 +5,23 @@ import { useToast, Toast } from '../../contexts/ToastContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { THEMES } from '../../constants';
 
+import { useEffect } from 'react';
+
 const ToastItem: React.FC<{ toast: Toast }> = ({ toast }) => {
   const { removeToast } = useToast();
   const { style, mode } = useTheme();
 
   const isNeo = style === THEMES.NEOBRUTALISM;
   const isDark = mode === 'dark';
+
+  useEffect(() => {
+    if (toast.duration && toast.duration > 0) {
+      const timer = setTimeout(() => {
+        removeToast(toast.id);
+      }, toast.duration);
+      return () => clearTimeout(timer);
+    }
+  }, [toast.id, toast.duration, removeToast]);
 
   const icons = {
     success: <CheckCircle className="w-5 h-5" />,
@@ -44,6 +55,7 @@ const ToastItem: React.FC<{ toast: Toast }> = ({ toast }) => {
       <span className="shrink-0">{icons[toast.type]}</span>
       <p className="flex-1 text-sm font-medium">{toast.message}</p>
       <button
+        type="button"
         onClick={() => removeToast(toast.id)}
         className="shrink-0 hover:opacity-70 transition-opacity"
         aria-label="Close notification"
