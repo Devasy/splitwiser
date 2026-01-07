@@ -16,8 +16,8 @@ web/
 ├── App.tsx           # Main router with protected routes
 ├── components/
 │   ├── layout/       # Layout, Sidebar, ThemeWrapper
-│   └── ui/           # Reusable: Button, Card, Input, Modal, Skeleton
-├── contexts/         # AuthContext, ThemeContext
+│   └── ui/           # Reusable: Button, Card, Input, Modal, Skeleton, Toast
+├── contexts/         # AuthContext, ThemeContext, ToastContext
 ├── pages/            # Route pages
 ├── services/         # API calls
 ├── constants.ts      # Theme constants (GLASSMORPHISM, NEOBRUTALISM)
@@ -38,6 +38,7 @@ mobile/
 ├── context/          # AuthContext
 ├── api/              # API client and service functions
 └── utils/            # Helpers (currency, balance calculations)
+```
 
 ---
 
@@ -85,6 +86,24 @@ colors: {
 ---
 
 ## Component Patterns
+
+### Toast Notifications
+
+**Date:** 2026-01-07
+**Context:** Implemented Toast system
+
+The app uses a global `ToastProvider` in `App.tsx` and a `useToast` hook.
+
+**Usage:**
+```tsx
+const { addToast } = useToast();
+addToast('Success message', 'success'); // Types: 'success' | 'error' | 'info'
+```
+
+**Implementation:**
+- `ToastContainer` is rendered once in `ToastProvider`.
+- Uses `z-100` to sit above Modals (`z-50`).
+- Supports both Glassmorphism and Neobrutalism themes.
 
 ### Button Component Variants
 

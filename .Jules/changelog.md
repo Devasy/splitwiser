@@ -9,6 +9,10 @@
 ### Added
 - Dashboard skeleton loading state (`DashboardSkeleton`) to improve perceived performance during data fetch.
 - Comprehensive `EmptyState` component for Groups and Friends pages to better guide new users.
+- Toast notification system (`ToastContext`, `ToastProvider`, `ToastContainer`) to provide non-blocking feedback for user actions.
+
+### Changed
+- Replaced native `alert()` calls in `GroupDetails.tsx` with modern Toast notifications for a consistent and polished user experience.
 
 ### Planned
 - See `todo.md` for queued tasks

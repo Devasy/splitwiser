@@ -4,6 +4,7 @@ import { Layout } from './components/layout/Layout';
 import { ThemeWrapper } from './components/layout/ThemeWrapper';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { ToastProvider } from './contexts/ToastContext';
 import { Auth } from './pages/Auth';
 import { Dashboard } from './pages/Dashboard';
 import { Friends } from './pages/Friends';
@@ -47,9 +48,11 @@ const App = () => {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <HashRouter>
-            <AppRoutes />
-        </HashRouter>
+        <ToastProvider>
+          <HashRouter>
+              <AppRoutes />
+          </HashRouter>
+        </ToastProvider>
       </AuthProvider>
     </ThemeProvider>
   );

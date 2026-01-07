@@ -15,12 +15,11 @@
   - Files modified: `web/pages/Dashboard.tsx`, `web/components/skeletons/DashboardSkeleton.tsx`
   - Impact: Professional loading experience that mimics actual content layout
 
-- [ ] **[ux]** Toast notification system for user actions
-  - Files: Create `web/components/ui/Toast.tsx`, integrate into actions
-  - Context: Show success/error toasts for create/delete actions (not alerts)
+- [x] **[ux]** Toast notification system for user actions
+  - Completed: 2026-01-07
+  - Files modified: `web/contexts/ToastContext.tsx`, `web/components/ui/Toast.tsx`, `web/pages/GroupDetails.tsx`, `web/types.ts`
+  - Context: Replaced alerts with toasts for better feedback on GroupDetails page
   - Impact: Modern feedback without blocking user
-  - Size: ~80 lines
-  - Added: 2026-01-01
 
 - [ ] **[a11y]** Complete keyboard navigation for Groups page
   - File: `web/pages/Groups.tsx`
@@ -155,4 +154,8 @@
   - Files modified: `web/components/ui/EmptyState.tsx`, `web/pages/Groups.tsx`, `web/pages/Friends.tsx`
   - Impact: Users now see a polished, illustrated empty state with clear CTAs when they have no groups or friends, instead of plain text.
 
-_No tasks completed yet. Move tasks here after completion._
+- [x] **[ux]** Toast notification system for user actions
+  - Completed: 2026-01-07
+  - Files modified: `web/contexts/ToastContext.tsx`, `web/components/ui/Toast.tsx`, `web/pages/GroupDetails.tsx`, `web/types.ts`
+  - Context: Replaced alerts with toasts for better feedback on GroupDetails page
+  - Impact: Modern feedback without blocking user
