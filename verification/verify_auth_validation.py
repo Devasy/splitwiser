@@ -1,4 +1,5 @@
-from playwright.sync_api import sync_playwright, expect
+from playwright.sync_api import expect, sync_playwright
+
 
 def run(playwright):
     browser = playwright.chromium.launch(headless=True)
@@ -39,7 +40,9 @@ def run(playwright):
     page.get_by_text("Don't have an account? Sign Up").click()
 
     # Verify errors are cleared
-    expect(page.get_by_text("Password must be at least 6 characters")).not_to_be_visible()
+    expect(
+        page.get_by_text("Password must be at least 6 characters")
+    ).not_to_be_visible()
 
     # Try empty signup
     page.get_by_role("button", name="Create Account").click()
@@ -48,6 +51,7 @@ def run(playwright):
     page.screenshot(path="verification/auth_signup_validation.png")
 
     browser.close()
+
 
 with sync_playwright() as playwright:
     run(playwright)
