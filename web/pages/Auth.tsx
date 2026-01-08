@@ -8,6 +8,7 @@ import { Spinner } from '../components/ui/Spinner';
 import { THEMES } from '../constants';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
+import { useToast } from '../contexts/ToastContext';
 import {
   login as apiLogin,
   signup as apiSignup,
@@ -26,6 +27,7 @@ export const Auth = () => {
 
   const { login } = useAuth();
   const { style, toggleStyle } = useTheme();
+  const { addToast } = useToast();
   const navigate = useNavigate();
 
   const handleGoogleSignIn = async () => {
@@ -40,6 +42,7 @@ export const Auth = () => {
         throw new Error('Invalid response from server');
       }
       login(access_token, user);
+      addToast('Welcome back!', 'success');
       navigate('/dashboard');
     } catch (err: any) {
       console.error('Google login error:', err);
@@ -75,6 +78,7 @@ export const Auth = () => {
 
       const { access_token, user } = res.data;
       login(access_token, user);
+      addToast(isLogin ? 'Welcome back!' : 'Account created successfully!', 'success');
       navigate('/dashboard');
     } catch (err: any) {
       if (err.response) {

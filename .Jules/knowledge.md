@@ -134,6 +134,21 @@ colors: {
 </Modal>
 ```
 
+### Toast Notification Pattern
+
+**Date:** 2026-01-01
+**Context:** ToastContext.tsx and Toast.tsx
+
+```tsx
+const { addToast } = useToast();
+addToast('Message', 'success|error|info');
+```
+
+- Supports `success`, `error`, `info` types
+- Automatically adapts to current theme (Glassmorphism/Neobrutalism)
+- Auto-dismisses after 3 seconds
+- Stacks vertically in bottom-right
+
 ---
 
 ## Mobile Patterns

@@ -9,6 +9,7 @@ import { Modal } from '../components/ui/Modal';
 import { Skeleton } from '../components/ui/Skeleton';
 import { THEMES } from '../constants';
 import { useTheme } from '../contexts/ThemeContext';
+import { useToast } from '../contexts/ToastContext';
 import { createGroup, getBalanceSummary, getGroups, joinGroup } from '../services/api';
 import { BalanceSummary, Group, GroupBalanceSummary } from '../types';
 
@@ -24,6 +25,7 @@ export const Groups = () => {
 
   const navigate = useNavigate();
   const { style, mode } = useTheme();
+  const { addToast } = useToast();
   const isNeo = style === THEMES.NEOBRUTALISM;
 
   useEffect(() => {
@@ -57,8 +59,9 @@ export const Groups = () => {
       setNewGroupName('');
       setIsCreateModalOpen(false);
       loadData();
+      addToast('Group created successfully!', 'success');
     } catch (err) {
-      alert('Failed to create group');
+      addToast('Failed to create group', 'error');
     }
   };
 
@@ -69,8 +72,9 @@ export const Groups = () => {
       setJoinCode('');
       setIsJoinModalOpen(false);
       loadData();
+      addToast('Joined group successfully!', 'success');
     } catch (err) {
-      alert('Failed to join group (Invalid code or already joined)');
+      addToast('Failed to join group (Invalid code or already joined)', 'error');
     }
   };
 

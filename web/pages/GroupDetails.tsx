@@ -9,6 +9,7 @@ import { Skeleton } from '../components/ui/Skeleton';
 import { THEMES } from '../constants';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
+import { useToast } from '../contexts/ToastContext';
 import {
     createExpense,
     createSettlement,
@@ -39,6 +40,7 @@ export const GroupDetails = () => {
     const navigate = useNavigate();
     const { user } = useAuth();
     const { style } = useTheme();
+    const { addToast } = useToast();
 
     const [group, setGroup] = useState<Group | null>(null);
     const [expenses, setExpenses] = useState<Expense[]>([]);
@@ -240,14 +242,16 @@ export const GroupDetails = () => {
         try {
             if (editingExpenseId) {
                 await updateExpense(id, editingExpenseId, payload);
+                addToast('Expense updated successfully!', 'success');
             } else {
                 await createExpense(id, payload);
+                addToast('Expense created successfully!', 'success');
             }
             setIsExpenseModalOpen(false);
             fetchData();
         } catch (err) {
             console.error(err);
-            alert('Error saving expense');
+            addToast('Error saving expense', 'error');
         }
     };
 
@@ -258,8 +262,9 @@ export const GroupDetails = () => {
                 await deleteExpense(id, editingExpenseId);
                 setIsExpenseModalOpen(false);
                 fetchData();
+                addToast('Expense deleted successfully', 'success');
             } catch (err) {
-                alert("Failed to delete expense");
+                addToast("Failed to delete expense", 'error');
             }
         }
     };
@@ -287,8 +292,9 @@ export const GroupDetails = () => {
             setIsPaymentModalOpen(false);
             setPaymentAmount('');
             fetchData();
+            addToast('Payment recorded successfully!', 'success');
         } catch (err) {
-            alert("Failed to record payment");
+            addToast("Failed to record payment", 'error');
         }
     };
 
@@ -299,8 +305,9 @@ export const GroupDetails = () => {
             await updateGroup(id, { name: editGroupName });
             setIsSettingsModalOpen(false);
             fetchData();
+            addToast('Group updated successfully!', 'success');
         } catch (err) {
-            alert("Failed to update group");
+            addToast("Failed to update group", 'error');
         }
     };
 
@@ -310,8 +317,9 @@ export const GroupDetails = () => {
             try {
                 await deleteGroup(id);
                 navigate('/groups');
+                addToast('Group deleted successfully', 'success');
             } catch (err) {
-                alert("Failed to delete group");
+                addToast("Failed to delete group", 'error');
             }
         }
     };
@@ -321,10 +329,10 @@ export const GroupDetails = () => {
         if (window.confirm("You can only leave when your balances are settled. Continue?")) {
             try {
                 await leaveGroup(id);
-                alert('You have left the group');
+                addToast('You have left the group', 'success');
                 navigate('/groups');
             } catch (err: any) {
-                alert(err.response?.data?.detail || "Cannot leave - please settle balances first");
+                addToast(err.response?.data?.detail || "Cannot leave - please settle balances first", 'error');
             }
         }
     };
@@ -344,8 +352,9 @@ export const GroupDetails = () => {
                 }
                 await removeMember(id, memberId);
                 fetchData();
+                addToast(`Removed ${memberName} from group`, 'success');
             } catch (err: any) {
-                alert(err.response?.data?.detail || "Failed to remove member");
+                addToast(err.response?.data?.detail || "Failed to remove member", 'error');
             }
         }
     };
