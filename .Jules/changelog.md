@@ -15,6 +15,13 @@
 
 ---
 
+## [Unreleased]
+
+### Added
+- Toast notification system (`web/components/ui/Toast.tsx`) with dual-theme support (Glassmorphism/Neobrutalism)
+- Global `ToastContext` for managing notifications
+- Replaced intrusive `window.alert()` calls with `addToast()` in Auth, Groups, and GroupDetails pages
+
 ## [2026-01-01] - Initial Setup
 
 ### Added

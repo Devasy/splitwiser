@@ -9,12 +9,14 @@ import { Modal } from '../components/ui/Modal';
 import { Skeleton } from '../components/ui/Skeleton';
 import { THEMES } from '../constants';
 import { useTheme } from '../contexts/ThemeContext';
+import { useToast } from '../contexts/ToastContext';
 import { createGroup, getBalanceSummary, getGroups, joinGroup } from '../services/api';
 import { BalanceSummary, Group, GroupBalanceSummary } from '../types';
 
 export const Groups = () => {
   const [groups, setGroups] = useState<Group[]>([]);
   const [balanceSummary, setBalanceSummary] = useState<BalanceSummary | null>(null);
+  const { addToast } = useToast();
   const [loading, setLoading] = useState(true);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isJoinModalOpen, setIsJoinModalOpen] = useState(false);
@@ -56,9 +58,10 @@ export const Groups = () => {
       await createGroup({ name: newGroupName });
       setNewGroupName('');
       setIsCreateModalOpen(false);
+      addToast('Group created successfully', 'success');
       loadData();
     } catch (err) {
-      alert('Failed to create group');
+      addToast('Failed to create group', 'error');
     }
   };
 
@@ -68,9 +71,10 @@ export const Groups = () => {
       await joinGroup(joinCode);
       setJoinCode('');
       setIsJoinModalOpen(false);
+      addToast('Joined group successfully', 'success');
       loadData();
     } catch (err) {
-      alert('Failed to join group (Invalid code or already joined)');
+      addToast('Failed to join group (Invalid code or already joined)', 'error');
     }
   };
 

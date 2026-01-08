@@ -134,6 +134,25 @@ colors: {
 </Modal>
 ```
 
+### Toast Notification Pattern
+
+**Date:** 2026-01-01
+**Context:** Replacing native alerts with non-blocking feedback
+
+```tsx
+const { addToast } = useToast();
+
+// Usage
+addToast('Action successful!', 'success'); // Green
+addToast('Something went wrong', 'error'); // Red
+addToast('Info message', 'info');          // Blue
+```
+
+**Implementation:**
+- Wrapped in `ToastProvider` at `App.tsx`
+- Renders `ToastContainer` with `AnimatePresence`
+- Supports Neobrutalism (hard shadows) and Glassmorphism (blur)
+
 ---
 
 ## Mobile Patterns
