@@ -70,7 +70,7 @@
 
 ### Web
 
-- [ ] **[ux]** Form validation with inline feedback
+- [x] **[ux]** Form validation with inline feedback
   - Files: `web/pages/Auth.tsx`, `web/pages/GroupDetails.tsx`
   - Context: Show real-time validation with error messages under inputs
   - Impact: Users know immediately if input is valid

@@ -24,11 +24,47 @@ export const Auth = () => {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<{ name?: string; email?: string; password?: string }>({});
 
   const { login } = useAuth();
   const { style, toggleStyle } = useTheme();
   const { addToast } = useToast();
   const navigate = useNavigate();
+
+  const validateForm = () => {
+    const newErrors: typeof fieldErrors = {};
+    let isValid = true;
+
+    if (!isLogin && !name.trim()) {
+      newErrors.name = 'Name is required';
+      isValid = false;
+    }
+
+    if (!email.trim()) {
+      newErrors.email = 'Email is required';
+      isValid = false;
+    } else if (!/\S+@\S+\.\S+/.test(email)) {
+      newErrors.email = 'Please enter a valid email address';
+      isValid = false;
+    }
+
+    if (!password) {
+      newErrors.password = 'Password is required';
+      isValid = false;
+    } else if (password.length < 6) {
+      newErrors.password = 'Password must be at least 6 characters';
+      isValid = false;
+    }
+
+    setFieldErrors(newErrors);
+    return isValid;
+  };
+
+  const clearFieldError = (field: keyof typeof fieldErrors) => {
+    if (fieldErrors[field]) {
+      setFieldErrors(prev => ({ ...prev, [field]: undefined }));
+    }
+  };
 
   const handleGoogleSignIn = async () => {
     setError('');
@@ -66,6 +102,11 @@ export const Auth = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    if (!validateForm()) {
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -210,7 +251,7 @@ export const Auth = () => {
               <div className="flex-grow border-t border-gray-200 dark:border-gray-700"></div>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4" noValidate>
               <AnimatePresence mode="wait">
                 {!isLogin && (
                   <motion.div
@@ -219,10 +260,14 @@ export const Auth = () => {
                     exit={{ height: 0, opacity: 0 }}
                   >
                     <Input
-                      placeholder="Full Name"
+                      label="Full Name"
+                      placeholder="John Doe"
                       value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      required
+                      onChange={(e) => {
+                        setName(e.target.value);
+                        clearFieldError('name');
+                      }}
+                      error={fieldErrors.name}
                       className={isNeo ? 'rounded-none' : ''}
                     />
                   </motion.div>
@@ -231,18 +276,26 @@ export const Auth = () => {
 
               <Input
                 type="email"
-                placeholder="Email Address"
+                label="Email Address"
+                placeholder="you@example.com"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  clearFieldError('email');
+                }}
+                error={fieldErrors.email}
                 className={isNeo ? 'rounded-none' : ''}
               />
               <Input
                 type="password"
-                placeholder="Password"
+                label="Password"
+                placeholder="••••••••"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  clearFieldError('password');
+                }}
+                error={fieldErrors.password}
                 className={isNeo ? 'rounded-none' : ''}
               />
 
@@ -268,7 +321,11 @@ export const Auth = () => {
             <div className="text-center pt-4">
               <button
                 type="button"
-                onClick={() => setIsLogin(!isLogin)}
+                onClick={() => {
+                  setIsLogin(!isLogin);
+                  setFieldErrors({});
+                  setError('');
+                }}
                 className="text-sm font-bold hover:underline opacity-70 hover:opacity-100 transition-opacity"
               >
                 {isLogin
