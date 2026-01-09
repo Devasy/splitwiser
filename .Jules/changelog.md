@@ -71,3 +71,11 @@
 **Notes:**
 - Any additional context
 -->
+### [2026-01-01] - v1.1.0
+
+#### Added
+- Pull-to-refresh functionality with haptic feedback to `HomeScreen` and `GroupDetailsScreen` in mobile app.
+
+**Files Modified:**
+- `mobile/screens/HomeScreen.js`
+- `mobile/screens/GroupDetailsScreen.js`

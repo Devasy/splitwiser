@@ -390,3 +390,11 @@ _Document errors and their solutions here as you encounter them._
 - react-native-paper: UI components
 - axios: API calls (via api/client.js)
 - expo: Platform SDK
+### Mobile - Pull-to-Refresh with Haptics
+**Date:** 2026-01-01
+**Context:** Implemented `RefreshControl` with `expo-haptics` on `HomeScreen` and `GroupDetailsScreen`.
+**Solution/Learning:**
+- Used `expo-haptics` for tactile feedback during refresh.
+- Introduced `isRefreshing` state separate from `isLoading` to ensure the `RefreshControl` spinner is visible during the refresh action. Simply reusing `isLoading` can lead to the spinner disappearing prematurely if `isLoading` is set to `true` during the fetch but the `RefreshControl` expects a dedicated refreshing prop that matches the user interaction lifecycle.
+- Used `Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)` for a subtle effect.
+**Files Affected:** `mobile/screens/HomeScreen.js`, `mobile/screens/GroupDetailsScreen.js`
