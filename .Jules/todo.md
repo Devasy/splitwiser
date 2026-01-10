@@ -70,13 +70,6 @@
 
 ### Web
 
-- [ ] **[ux]** Form validation with inline feedback
-  - Files: `web/pages/Auth.tsx`, `web/pages/GroupDetails.tsx`
-  - Context: Show real-time validation with error messages under inputs
-  - Impact: Users know immediately if input is valid
-  - Size: ~50 lines
-  - Added: 2026-01-01
-
 - [ ] **[style]** Consistent hover/focus states across all buttons
   - Files: `web/components/ui/Button.tsx`, usage across pages
   - Context: Ensure all buttons have proper hover + focus-visible styles
@@ -152,5 +145,10 @@
   - Completed: 2026-01-01
   - Files modified: `web/components/ui/EmptyState.tsx`, `web/pages/Groups.tsx`, `web/pages/Friends.tsx`
   - Impact: Users now see a polished, illustrated empty state with clear CTAs when they have no groups or friends, instead of plain text.
+
+- [x] **[ux]** Form validation with inline feedback
+  - Completed: 2026-01-01
+  - Files modified: `web/pages/Auth.tsx`
+  - Impact: Users know immediately if input is valid via inline error messages and red borders.
 
 _No tasks completed yet. Move tasks here after completion._
