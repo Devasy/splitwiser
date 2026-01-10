@@ -24,11 +24,41 @@ export const Auth = () => {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string; name?: string }>({});
 
   const { login } = useAuth();
   const { style, toggleStyle } = useTheme();
   const { addToast } = useToast();
   const navigate = useNavigate();
+
+  const validateForm = () => {
+    const newErrors: { email?: string; password?: string; name?: string } = {};
+    let isValid = true;
+
+    if (!email) {
+      newErrors.email = 'Email is required';
+      isValid = false;
+    } else if (!/\S+@\S+\.\S+/.test(email)) {
+      newErrors.email = 'Please enter a valid email address';
+      isValid = false;
+    }
+
+    if (!password) {
+      newErrors.password = 'Password is required';
+      isValid = false;
+    } else if (password.length < 6) {
+      newErrors.password = 'Password must be at least 6 characters';
+      isValid = false;
+    }
+
+    if (!isLogin && !name) {
+      newErrors.name = 'Name is required';
+      isValid = false;
+    }
+
+    setFieldErrors(newErrors);
+    return isValid;
+  };
 
   const handleGoogleSignIn = async () => {
     setError('');
@@ -66,6 +96,11 @@ export const Auth = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    if (!validateForm()) {
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -93,6 +128,12 @@ export const Auth = () => {
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const clearFieldError = (field: 'email' | 'password' | 'name') => {
+    if (fieldErrors[field]) {
+      setFieldErrors(prev => ({ ...prev, [field]: undefined }));
     }
   };
 
@@ -210,7 +251,7 @@ export const Auth = () => {
               <div className="flex-grow border-t border-gray-200 dark:border-gray-700"></div>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4" noValidate>
               <AnimatePresence mode="wait">
                 {!isLogin && (
                   <motion.div
@@ -221,8 +262,12 @@ export const Auth = () => {
                     <Input
                       placeholder="Full Name"
                       value={name}
-                      onChange={(e) => setName(e.target.value)}
+                      onChange={(e) => {
+                        setName(e.target.value);
+                        clearFieldError('name');
+                      }}
                       required
+                      error={fieldErrors.name}
                       className={isNeo ? 'rounded-none' : ''}
                     />
                   </motion.div>
@@ -233,16 +278,24 @@ export const Auth = () => {
                 type="email"
                 placeholder="Email Address"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  clearFieldError('email');
+                }}
                 required
+                error={fieldErrors.email}
                 className={isNeo ? 'rounded-none' : ''}
               />
               <Input
                 type="password"
                 placeholder="Password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  clearFieldError('password');
+                }}
                 required
+                error={fieldErrors.password}
                 className={isNeo ? 'rounded-none' : ''}
               />
 
@@ -268,7 +321,11 @@ export const Auth = () => {
             <div className="text-center pt-4">
               <button
                 type="button"
-                onClick={() => setIsLogin(!isLogin)}
+                onClick={() => {
+                  setIsLogin(!isLogin);
+                  setFieldErrors({});
+                  setError('');
+                }}
                 className="text-sm font-bold hover:underline opacity-70 hover:opacity-100 transition-opacity"
               >
                 {isLogin

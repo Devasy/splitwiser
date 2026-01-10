@@ -149,6 +149,25 @@ addToast('Message', 'success|error|info');
 - Auto-dismisses after 3 seconds
 - Stacks vertically in bottom-right
 
+### Form Validation Pattern
+
+**Date:** 2026-01-01
+**Context:** Implemented in Auth.tsx
+
+```tsx
+const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({});
+
+const validate = () => {
+  const errors = {};
+  if (!value) errors.field = 'Required';
+  setFieldErrors(errors);
+  return Object.keys(errors).length === 0;
+};
+
+// In JSX
+<Input error={fieldErrors.field} />
+```
+
 ---
 
 ## Mobile Patterns
