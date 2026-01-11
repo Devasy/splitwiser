@@ -38,6 +38,7 @@ mobile/
 ├── context/          # AuthContext
 ├── api/              # API client and service functions
 └── utils/            # Helpers (currency, balance calculations)
+```
 
 ---
 
@@ -173,6 +174,46 @@ Commonly used components:
 **Context:** Screens use View without SafeAreaView
 
 Most screens use `<View style={{ flex: 1 }}>` - consider wrapping in `SafeAreaView` for notched devices.
+
+### List Loading vs. Refreshing
+
+**Date:** 2026-01-01
+**Context:** Implementing pull-to-refresh on mobile lists
+
+Always separate `isLoading` (initial blocking load) from `isRefreshing` (pull-to-refresh).
+
+**Bad Pattern:**
+```javascript
+<FlatList
+  refreshing={isLoading}
+  onRefresh={fetchData}
+/>
+{isLoading ? <Spinner /> : <List />} // List disappears on refresh!
+```
+
+**Good Pattern:**
+```javascript
+const [isLoading, setIsLoading] = useState(true); // Initial load
+const [isRefreshing, setIsRefreshing] = useState(false); // Pull-to-refresh
+
+const fetchData = async (refresh = false) => {
+  if (refresh) setIsRefreshing(true); else setIsLoading(true);
+  // ... fetch data
+  setIsLoading(false);
+  setIsRefreshing(false);
+}
+
+// ...
+
+{isLoading ? <Spinner /> : (
+  <FlatList
+    refreshing={isRefreshing}
+    onRefresh={() => fetchData(true)}
+  />
+)}
+```
+
+**Also:** Use `expo-haptics` for tactile feedback on refresh triggers.
 
 ---
 
