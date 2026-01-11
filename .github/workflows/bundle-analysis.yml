@@ -146,7 +146,7 @@ jobs:
     
     - name: Upload Bundle Analysis Report
       if: always() && hashFiles('frontend/bundle-analysis.md') != ''
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       with:
         name: bundle-analysis-report
         path: frontend/bundle-analysis.md
