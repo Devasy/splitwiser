@@ -4,9 +4,14 @@ import time
 from logging.config import dictConfig
 from typing import Optional
 
+from dotenv import load_dotenv
+from PIL import Image, ImageFile
+from pydantic import Field
 from pydantic_settings import BaseSettings
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
+
+load_dotenv()
 
 
 class Settings(BaseSettings):
@@ -20,8 +25,15 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 15
     refresh_token_expire_days: int = 30
     # Firebase
-    firebase_project_id: Optional[str] = None
-    firebase_service_account_path: str = "./firebase-service-account.json"
+    use_firebase_emulator: bool = Field(
+        default=False, env="USE_FIREBASE_EMULATOR"
+    )  # type:ignore
+    firebase_project_id: Optional[str] = Field(
+        default=None, env="FIREBASE_PROJECT_ID"
+    )  # type:ignore
+    firebase_service_account_path: str = Field(
+        default="./firebase-service-account.json", env="FIREBASE_SERVICE_ACCOUNT_PATH"
+    )  # type:ignore
     # Firebase service account credentials as environment variables
     firebase_type: Optional[str] = None
     firebase_private_key_id: Optional[str] = None
@@ -32,6 +44,14 @@ class Settings(BaseSettings):
     firebase_token_uri: Optional[str] = None
     firebase_auth_provider_x509_cert_url: Optional[str] = None
     firebase_client_x509_cert_url: Optional[str] = None
+    # Image validation configs
+    LOAD_TRUNCATED_IMAGES: bool = False
+    MAX_IMAGE_PIXELS: int = 50_00_000
+    MAX_FILE_SIZE: int = 5 * 1024 * 1024
+    SIGNED_URL_EXPIRY_SECONDS: int = Field(
+        default=3600, env="SIGNED_URL_EXPIRY_SECONDS"
+    )  # type:ignore
+    CLAMAV_ENABLED: bool = False
 
     # App
     debug: bool = False

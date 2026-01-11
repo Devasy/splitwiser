@@ -18,3 +18,5 @@ mongomock-motor
 pytest-env
 pytest-cov
 pytest-mock
+pillow>=10.0.0
+python-magic>=0.4.27
