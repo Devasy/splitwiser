@@ -1,40 +1,50 @@
 {
   "expo": {
-    "name": "frontend",
-    "slug": "frontend",
-    "platforms": ["ios", "android", "web"],
+    "name": "Splitwiser Mobile",
+    "slug": "splitwiser-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/splash.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
-      "infoPlist": {
-        "NSPhotoLibraryUsageDescription": "Allow Splitwiser to select a group icon from your photo library."
-      }
+      "bundleIdentifier": "com.splitwiser.mobile"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true,
-      "permissions": ["READ_MEDIA_IMAGES"]
+      "package": "com.splitwiser.mobile"
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
     },
-    "extra": {
-      "eas": {
-        "projectId": "afe97159-52c4-425a-9ce3-c56d4f2cb568"
-      }
-    },
-    "owner": "devasy23"
+    "plugins": [
+      "expo-router",
+      "expo-font",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "newArchEnabled": true
+          },
+          "ios": {
+            "newArchEnabled": true
+          }
+        }
+      ]
+    ],
+    "scheme": "splitwiser",
+    "newArchEnabled": true
   }
 }
