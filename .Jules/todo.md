@@ -43,12 +43,10 @@
 
 ### Mobile
 
-- [ ] **[ux]** Pull-to-refresh with haptic feedback on all list screens
-  - Files: `mobile/screens/HomeScreen.js`, `mobile/screens/GroupDetailsScreen.js`
-  - Context: Add RefreshControl + Expo Haptics to main lists
-  - Impact: Native feel, users can easily refresh data
-  - Size: ~45 lines
-  - Added: 2026-01-01
+- [x] **[ux]** Pull-to-refresh with haptic feedback on all list screens
+  - Completed: 2026-01-01
+  - Files modified: `mobile/screens/HomeScreen.js`, `mobile/screens/GroupDetailsScreen.js`
+  - Impact: Native feel, users can easily refresh data without losing context
 
 - [ ] **[ux]** Complete skeleton loading for HomeScreen groups
   - File: `mobile/screens/HomeScreen.js`
@@ -153,4 +151,7 @@
   - Files modified: `web/components/ui/EmptyState.tsx`, `web/pages/Groups.tsx`, `web/pages/Friends.tsx`
   - Impact: Users now see a polished, illustrated empty state with clear CTAs when they have no groups or friends, instead of plain text.
 
-_No tasks completed yet. Move tasks here after completion._
+- [x] **[ux]** Pull-to-refresh with haptic feedback on all list screens
+  - Completed: 2026-01-01
+  - Files modified: `mobile/screens/HomeScreen.js`, `mobile/screens/GroupDetailsScreen.js`
+  - Impact: Native feel, users can easily refresh data without losing context.

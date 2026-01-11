@@ -1,5 +1,6 @@
 import { useContext, useEffect, useState } from "react";
 import { Alert, FlatList, StyleSheet, View } from "react-native";
+import * as Haptics from "expo-haptics";
 import {
   ActivityIndicator,
   Appbar,
@@ -19,6 +20,7 @@ const HomeScreen = ({ navigation }) => {
   const { token, logout, user } = useContext(AuthContext);
   const [groups, setGroups] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [groupSettlements, setGroupSettlements] = useState({}); // Track settlement status for each group
 
   // State for the Create Group modal
@@ -66,9 +68,15 @@ const HomeScreen = ({ navigation }) => {
     }
   };
 
-  const fetchGroups = async () => {
+  const fetchGroups = async (refresh = false) => {
     try {
-      setIsLoading(true);
+      if (refresh) {
+        setIsRefreshing(true);
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      } else {
+        setIsLoading(true);
+      }
+
       const response = await getGroups();
       const groupsList = response.data.groups;
       setGroups(groupsList);
@@ -92,6 +100,7 @@ const HomeScreen = ({ navigation }) => {
       Alert.alert("Error", "Failed to fetch groups.");
     } finally {
       setIsLoading(false);
+      setIsRefreshing(false);
     }
   };
 
@@ -100,6 +109,10 @@ const HomeScreen = ({ navigation }) => {
       fetchGroups();
     }
   }, [token]);
+
+  const onRefresh = () => {
+    fetchGroups(true);
+  };
 
   const handleCreateGroup = async () => {
     if (!newGroupName) {
@@ -246,8 +259,8 @@ const HomeScreen = ({ navigation }) => {
               No groups found. Create or join one!
             </Text>
           }
-          onRefresh={fetchGroups}
-          refreshing={isLoading}
+          onRefresh={onRefresh}
+          refreshing={isRefreshing}
         />
       )}
     </View>

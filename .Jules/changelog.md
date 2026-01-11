@@ -10,6 +10,7 @@
 - Dashboard skeleton loading state (`DashboardSkeleton`) to improve perceived performance during data fetch.
 - Comprehensive `EmptyState` component for Groups and Friends pages to better guide new users.
 - Toast notification system (`ToastContext`, `Toast` component) for providing non-blocking user feedback.
+- Pull-to-refresh with haptic feedback on `HomeScreen` and `GroupDetailsScreen` in mobile app.
 
 ### Planned
 - See `todo.md` for queued tasks
