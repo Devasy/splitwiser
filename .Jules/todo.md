@@ -145,8 +145,8 @@
   - Impact: Users now see a polished, illustrated empty state with clear CTAs when they have no groups or friends, instead of plain text.
 
 - [x] **[ux]** Pull-to-refresh with haptic feedback on all list screens
-  - Completed: 2026-12-01
-  - Files modified: `mobile/screens/HomeScreen.js`, `mobile/screens/GroupDetailsScreen.js`
+  - Completed: 2026-01-11
+  - Files modified: `mobile/screens/HomeScreen.js`, `mobile/screens/GroupDetailsScreen.js`, `mobile/screens/FriendsScreen.js`
   - Impact: Native feel, users can easily refresh data without losing context.
 - [x] **[ux]** Form validation with inline feedback
   - Completed: 2026-11-01
