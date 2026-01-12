@@ -134,7 +134,6 @@ export const Groups = () => {
               <Search className={`absolute left-4 top-1/2 -translate-y-1/2 ${isNeo ? 'text-black' : 'text-white/60'}`} size={20} />
               <input
                 type="text"
-                aria-label="Search groups"
                 placeholder="Search groups..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -165,17 +164,16 @@ export const Groups = () => {
               const balanceAmount = groupBalance?.amount || 0;
 
               return (
-                <motion.button
+                <motion.div
                   key={group._id}
                   layout
                   variants={itemVariants}
                   whileHover={{ scale: 1.02, rotate: isNeo ? 1 : 0 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={() => navigate(`/groups/${group._id}`)}
-                  aria-label={`View details for group ${group.name}`}
-                  className={`group cursor-pointer transition-all duration-300 relative overflow-hidden flex flex-col h-full w-full text-left focus:outline-none focus:ring-4 focus:ring-blue-500/50
+                  className={`group cursor-pointer transition-all duration-300 relative overflow-hidden flex flex-col h-full
                     ${isNeo
-                      ? `bg-white border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] rounded-none focus:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]`
+                      ? `bg-white border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] rounded-none`
                       : `rounded-3xl border shadow-lg backdrop-blur-md ${mode === 'dark' ? 'border-white/20 bg-white/5 hover:bg-white/10' : 'border-black/5 bg-white/60 hover:bg-white/80'}`}
                     `}
                 >
@@ -208,7 +206,7 @@ export const Groups = () => {
                       </div>
                     </div>
                   </div>
-                </motion.button>
+                </motion.div>
               );
             })
           )}
