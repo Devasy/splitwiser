@@ -457,6 +457,168 @@ _Document errors and their solutions here as you encounter them._
 
 ---
 
+## Recent Implementation Reviews
+
+### ✅ Successful PR Pattern: Toast Notification System (#227)
+
+**Date:** 2026-01-13
+**Context:** Review of merged async agent PRs
+
+**What was implemented:**
+1. Created `ToastContext` with proper state management
+2. Created `Toast` component with dual-theme support
+3. Integrated `ToastProvider` into `App.tsx`
+4. Added toast notifications to:
+   - Auth.tsx (login/signup feedback)
+   - Groups.tsx (create/join group)
+   - GroupDetails.tsx (expense C/U/D, payments, settings)
+   - Profile.tsx (profile updates)
+
+**Why it succeeded:**
+- ✅ Complete system implementation (not piecemeal)
+- ✅ Dual-theme support from the start
+- ✅ Proper accessibility (aria-label on close button)
+- ✅ Memory leak prevention (useEffect cleanup in ToastItem)
+- ✅ Integrated across multiple pages immediately
+- ✅ Auto-dismiss with configurable duration
+
+**Key learnings:**
+- Always implement complete systems with all integration points
+- Build theme support into components from the start
+- Consider memory management (cleanup timers properly)
+- Integrate broadly - don't just add to one page
+
+**Files Modified:**
+- `web/contexts/ToastContext.tsx` (created)
+- `web/components/ui/Toast.tsx` (created)
+- `web/App.tsx` (added provider)
+- `web/pages/Auth.tsx`, `web/pages/Groups.tsx`, `web/pages/GroupDetails.tsx`, `web/pages/Profile.tsx` (integrated)
+
+---
+
+### ✅ Successful PR Pattern: Keyboard Navigation Iteration (#236)
+
+**Date:** 2026-01-13
+**Context:** Review of merged async agent PRs
+
+**What was implemented:**
+- Commit 1: Added manual keyboard handlers to group cards (working solution)
+- Commit 2: Refactored to semantic `motion.button` (better solution)
+
+**Implementation evolution:**
+```tsx
+// Iteration 1: Manual handlers
+<motion.div
+  onClick={...}
+  role="button"
+  tabIndex={0}
+  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') ... }}
+>
+
+// Iteration 2: Semantic element
+<motion.button
+  onClick={...}
+  aria-label="..."
+  className="w-full text-left"
+>
+```
+
+**Why it succeeded:**
+- ✅ Shipped working solution first
+- ✅ Recognized better semantic approach
+- ✅ Made refinement commit to improve
+- ✅ Added search input aria-label too
+- ✅ Added focus ring styles
+
+**Key learnings:**
+- Don't be afraid to iterate and refine
+- Semantic HTML > ARIA when possible
+- Ship working code, then improve it
+- Two focused commits better than one sprawling commit
+
+---
+
+### ✅ Successful PR Pattern: Form Validation with A11y (#234)
+
+**Date:** 2026-01-13
+**Context:** Review of merged async agent PRs
+
+**What was implemented:**
+1. Added validation logic (email regex, password length, required fields)
+2. Added field-level error state management
+3. Clear errors on field change (good UX)
+4. Proper accessibility attributes throughout
+5. Added `noValidate` to form (custom validation)
+6. Clear errors when switching between login/signup
+
+**Accessibility done right:**
+- Input component handles `aria-invalid`
+- Input component handles `aria-describedby` for errors
+- Error messages have `role="alert"`
+- Server errors also have `role="alert"`
+
+**Why it succeeded:**
+- ✅ Complete validation system
+- ✅ Accessibility considered from start
+- ✅ Good UX (clear errors on type)
+- ✅ Works with existing Input component
+- ✅ Handles both client and server errors
+
+**Key learnings:**
+- Build accessibility in from the start
+- Leverage existing components (Input already had error prop)
+- Think about user flow (clear errors on type, on mode switch)
+
+---
+
+### ✅ Successful PR Pattern: EmptyState Component (#226)
+
+**Date:** 2026-01-13
+**Context:** Review of merged async agent PRs
+
+**What was implemented:**
+1. Created reusable `EmptyState` component
+2. Built-in dual-theme support
+3. Added `aria-hidden="true"` to decorative icon
+4. Integrated into Groups and Friends pages
+
+**Why it succeeded:**
+- ✅ Reusable component created
+- ✅ Dual-theme support built-in
+- ✅ Proper accessibility (aria-hidden for decorative)
+- ✅ Used immediately in two places
+
+**Key learnings:**
+- Create reusable components when pattern repeats
+- Always consider decorative vs meaningful content
+- Integrate immediately to prove usefulness
+
+---
+
+### ✅ Successful PR Pattern: Dashboard Skeleton (#225)
+
+**Date:** 2026-01-13
+**Context:** Review of merged async agent PRs
+
+**What was implemented:**
+1. Created `DashboardSkeleton` component
+2. Mimics actual dashboard layout (cards + chart area)
+3. Replaced simple "Loading..." text
+4. Proper Tailwind animation classes
+
+**Why it succeeded:**
+- ✅ Improves perceived performance
+- ✅ Reduces layout shift
+- ✅ Professional loading experience
+- ✅ Matches actual layout
+
+**Key learnings:**
+- Skeleton loaders should match actual content layout
+- Use existing Tailwind animation utilities
+- Better than generic spinners for content-heavy pages
+
+---
+
 ## Dependencies Reference
 
 ### Web
