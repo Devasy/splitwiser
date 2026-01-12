@@ -7,7 +7,7 @@
 ## [Unreleased]
 
 ### Added
-- Inline form validation in Auth page with real-time feedback and accessibility support.
+- Inline form validation in Auth page with real-time feedback and proper ARIA accessibility support (`aria-invalid`, `aria-describedby`, `role="alert"`).
 - Dashboard skeleton loading state (`DashboardSkeleton`) to improve perceived performance during data fetch.
 - Comprehensive `EmptyState` component for Groups and Friends pages to better guide new users.
 - Toast notification system (`ToastContext`, `Toast` component) for providing non-blocking user feedback.

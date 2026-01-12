@@ -16,6 +16,12 @@ import {
 } from '../services/api';
 import { signInWithGoogle } from '../services/firebase';
 
+type FormErrors = {
+  email?: string;
+  password?: string;
+  name?: string;
+};
+
 export const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
@@ -24,7 +30,7 @@ export const Auth = () => {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState('');
-  const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string; name?: string }>({});
+  const [fieldErrors, setFieldErrors] = useState<FormErrors>({});
 
   const { login } = useAuth();
   const { style, toggleStyle } = useTheme();
@@ -32,32 +38,26 @@ export const Auth = () => {
   const navigate = useNavigate();
 
   const validateForm = () => {
-    const newErrors: { email?: string; password?: string; name?: string } = {};
-    let isValid = true;
+    const newErrors: FormErrors = {};
 
     if (!email) {
       newErrors.email = 'Email is required';
-      isValid = false;
     } else if (!/\S+@\S+\.\S+/.test(email)) {
       newErrors.email = 'Please enter a valid email address';
-      isValid = false;
     }
 
     if (!password) {
       newErrors.password = 'Password is required';
-      isValid = false;
     } else if (password.length < 6) {
       newErrors.password = 'Password must be at least 6 characters';
-      isValid = false;
     }
 
     if (!isLogin && !name) {
       newErrors.name = 'Name is required';
-      isValid = false;
     }
 
     setFieldErrors(newErrors);
-    return isValid;
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleGoogleSignIn = async () => {
