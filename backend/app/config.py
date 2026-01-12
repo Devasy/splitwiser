@@ -33,6 +33,12 @@ class Settings(BaseSettings):
     firebase_auth_provider_x509_cert_url: Optional[str] = None
     firebase_client_x509_cert_url: Optional[str] = None
 
+    # Splitwise Integration
+    splitwise_api_key: Optional[str] = None
+    splitwise_consumer_key: Optional[str] = None
+    splitwise_consumer_secret: Optional[str] = None
+    frontend_url: str = "http://localhost:5173"  # Frontend URL for OAuth redirect
+
     # App
     debug: bool = False
 

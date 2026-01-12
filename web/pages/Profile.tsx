@@ -109,6 +109,12 @@ export const Profile = () => {
             ]
         },
         {
+            title: 'Import',
+            items: [
+                { label: 'Import from Splitwise', icon: Settings, onClick: () => navigate('/import/splitwise'), desc: 'Import all your Splitwise data' },
+            ]
+        },
+        {
             title: 'App',
             items: [
                 { label: 'Appearance', icon: Settings, onClick: handleComingSoon, desc: 'Theme and display settings' },

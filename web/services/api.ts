@@ -49,6 +49,13 @@ export const getBalanceSummary = async () => api.get('/users/me/balance-summary'
 export const getFriendsBalance = async () => api.get('/users/me/friends-balance');
 export const updateProfile = async (data: { name?: string; imageUrl?: string }) => api.patch('/users/me', data);
 
+// Splitwise Import
+export const getSplitwiseAuthUrl = async () => api.get('/import/splitwise/authorize');
+export const handleSplitwiseCallback = async (code: string, state: string) => api.post('/import/splitwise/callback', { code, state });
+export const startSplitwiseImport = async (apiKey: string) => api.post('/import/splitwise/start', { api_key: apiKey });
+export const getImportStatus = async (importJobId: string) => api.get(`/import/status/${importJobId}`);
+export const rollbackImport = async (importJobId: string) => api.post(`/import/rollback/${importJobId}`);
+
 // Group Management
 export const leaveGroup = async (groupId: string) => api.post(`/groups/${groupId}/leave`);
 export const removeMember = async (groupId: string, userId: string) => api.delete(`/groups/${groupId}/members/${userId}`);
