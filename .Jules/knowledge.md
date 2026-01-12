@@ -149,6 +149,46 @@ addToast('Message', 'success|error|info');
 - Auto-dismisses after 3 seconds
 - Stacks vertically in bottom-right
 
+### Form Validation Pattern
+
+**Date:** 2026-01-01
+**Context:** Implemented in Auth.tsx
+
+```tsx
+type FormErrors = { [key: string]: string };
+const [fieldErrors, setFieldErrors] = useState<FormErrors>({});
+
+// 1. Validation Logic
+const validate = () => {
+  const newErrors: FormErrors = {};
+  if (!email) newErrors.email = 'Required';
+  setFieldErrors(newErrors);
+  return Object.keys(newErrors).length === 0;
+};
+
+// 2. Clear on type
+const clearFieldError = (field: string) => {
+  if (fieldErrors[field]) {
+    setFieldErrors(prev => ({ ...prev, [field]: undefined }));
+  }
+};
+
+// 3. Render with accessibility
+<form onSubmit={handleSubmit} noValidate>
+  <Input
+    error={fieldErrors.email}
+    onChange={(e) => {
+      setEmail(e.target.value);
+      clearFieldError('email');
+    }}
+    // Input component handles:
+    // aria-invalid={!!error}
+    // aria-describedby={`${id}-error`}
+    // Error message has id={`${id}-error`} and role="alert"
+  />
+</form>
+```
+
 ---
 
 ## Mobile Patterns
