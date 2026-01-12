@@ -13,6 +13,7 @@ export const Input: React.FC<InputProps> = ({ label, error, className = '', type
   const [showPassword, setShowPassword] = useState(false);
   const generatedId = useId();
   const inputId = id || generatedId;
+  const errorId = `${inputId}-error`;
 
   const isPassword = type === 'password';
   const inputType = isPassword ? (showPassword ? 'text' : 'password') : type;
@@ -37,6 +38,8 @@ export const Input: React.FC<InputProps> = ({ label, error, className = '', type
           id={inputId}
           type={inputType}
           className={`${inputStyles} ${className}`}
+          aria-invalid={!!error}
+          aria-describedby={error ? errorId : undefined}
           {...props}
         />
         {isPassword && (
@@ -54,7 +57,7 @@ export const Input: React.FC<InputProps> = ({ label, error, className = '', type
           </button>
         )}
       </div>
-      {error && <span className="text-red-500 text-xs font-bold mt-1">{error}</span>}
+      {error && <span id={errorId} role="alert" className="text-red-500 text-xs font-bold mt-1">{error}</span>}
     </div>
   );
 };

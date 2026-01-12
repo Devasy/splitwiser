@@ -16,6 +16,12 @@ import {
 } from '../services/api';
 import { signInWithGoogle } from '../services/firebase';
 
+type FormErrors = {
+  email?: string;
+  password?: string;
+  name?: string;
+};
+
 export const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
@@ -24,11 +30,35 @@ export const Auth = () => {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<FormErrors>({});
 
   const { login } = useAuth();
   const { style, toggleStyle } = useTheme();
   const { addToast } = useToast();
   const navigate = useNavigate();
+
+  const validateForm = () => {
+    const newErrors: FormErrors = {};
+
+    if (!email) {
+      newErrors.email = 'Email is required';
+    } else if (!/\S+@\S+\.\S+/.test(email)) {
+      newErrors.email = 'Please enter a valid email address';
+    }
+
+    if (!password) {
+      newErrors.password = 'Password is required';
+    } else if (password.length < 6) {
+      newErrors.password = 'Password must be at least 6 characters';
+    }
+
+    if (!isLogin && !name) {
+      newErrors.name = 'Name is required';
+    }
+
+    setFieldErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleGoogleSignIn = async () => {
     setError('');
@@ -66,6 +96,11 @@ export const Auth = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    if (!validateForm()) {
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -93,6 +128,12 @@ export const Auth = () => {
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const clearFieldError = (field: 'email' | 'password' | 'name') => {
+    if (fieldErrors[field]) {
+      setFieldErrors(prev => ({ ...prev, [field]: undefined }));
     }
   };
 
@@ -210,7 +251,7 @@ export const Auth = () => {
               <div className="flex-grow border-t border-gray-200 dark:border-gray-700"></div>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4" noValidate>
               <AnimatePresence mode="wait">
                 {!isLogin && (
                   <motion.div
@@ -221,8 +262,12 @@ export const Auth = () => {
                     <Input
                       placeholder="Full Name"
                       value={name}
-                      onChange={(e) => setName(e.target.value)}
+                      onChange={(e) => {
+                        setName(e.target.value);
+                        clearFieldError('name');
+                      }}
                       required
+                      error={fieldErrors.name}
                       className={isNeo ? 'rounded-none' : ''}
                     />
                   </motion.div>
@@ -233,16 +278,24 @@ export const Auth = () => {
                 type="email"
                 placeholder="Email Address"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  clearFieldError('email');
+                }}
                 required
+                error={fieldErrors.email}
                 className={isNeo ? 'rounded-none' : ''}
               />
               <Input
                 type="password"
                 placeholder="Password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  clearFieldError('password');
+                }}
                 required
+                error={fieldErrors.password}
                 className={isNeo ? 'rounded-none' : ''}
               />
 
@@ -251,6 +304,7 @@ export const Auth = () => {
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
                   className={`p-3 text-red-600 text-sm font-medium border border-red-100 ${isNeo ? 'bg-red-100 border-2 border-black rounded-none' : 'bg-red-50 rounded-lg'}`}
+                  role="alert"
                 >
                   {error}
                 </motion.div>
@@ -268,7 +322,11 @@ export const Auth = () => {
             <div className="text-center pt-4">
               <button
                 type="button"
-                onClick={() => setIsLogin(!isLogin)}
+                onClick={() => {
+                  setIsLogin(!isLogin);
+                  setFieldErrors({});
+                  setError('');
+                }}
                 className="text-sm font-bold hover:underline opacity-70 hover:opacity-100 transition-opacity"
               >
                 {isLogin
