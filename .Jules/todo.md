@@ -20,19 +20,19 @@
   - Files modified: `web/contexts/ToastContext.tsx`, `web/components/ui/Toast.tsx`, `web/App.tsx`, `web/pages/Auth.tsx`
   - Impact: Modern feedback system that supports both themes
 
-- [ ] **[a11y]** Complete keyboard navigation for Groups page
+- [x] **[a11y]** Complete keyboard navigation for Groups page
+  - Completed: 2026-01-01
   - File: `web/pages/Groups.tsx`
   - Context: Add keyboard handling to group cards + search + modals
   - Impact: Full keyboard accessibility for power users
   - Size: ~50 lines
-  - Added: 2026-01-01
 
 - [x] **[ux]** Comprehensive empty states with illustrations
+  - Completed: 2026-01-01
   - Files: `web/pages/Groups.tsx`, `web/pages/Friends.tsx`
   - Context: Create illustrated empty states with CTAs (not just text)
   - Impact: Guides new users, makes app feel polished
   - Size: ~70 lines
-  - Added: 2026-01-01
 
 - [ ] **[ux]** Error boundary with retry for API failures
   - Files: Create `web/components/ErrorBoundary.tsx`, wrap app
@@ -146,8 +146,12 @@
   - Files modified: `web/components/ui/EmptyState.tsx`, `web/pages/Groups.tsx`, `web/pages/Friends.tsx`
   - Impact: Users now see a polished, illustrated empty state with clear CTAs when they have no groups or friends, instead of plain text.
 
+- [x] **[a11y]** Complete keyboard navigation for Groups page
+  - Completed: 2026-01-12
+  - File: `web/pages/Groups.tsx`
+  - Impact: Users can now navigate groups, join/create buttons, and search using only the keyboard with proper focus indicators.
 - [x] **[ux]** Form validation with inline feedback
-  - Completed: 2026-01-01
+  - Completed: 2026-01-11
   - Files modified: `web/pages/Auth.tsx`
   - Impact: Users know immediately if input is valid via inline error messages and red borders.
 
