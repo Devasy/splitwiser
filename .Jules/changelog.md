@@ -12,6 +12,7 @@
 - Comprehensive `EmptyState` component for Groups and Friends pages to better guide new users.
 - Toast notification system (`ToastContext`, `Toast` component) for providing non-blocking user feedback.
 - Pull-to-refresh with haptic feedback on `HomeScreen` and `GroupDetailsScreen` in mobile app.
+- Keyboard navigation support for Groups page, enabling accessibility for power users.
 
 ### Planned
 - See `todo.md` for queued tasks
@@ -40,36 +41,3 @@
 - `.jules/todo.md`
 - `.jules/knowledge.md`
 - `.jules/changelog.md`
-
----
-
-<!--
-## Template for future entries:
-
-## [YYYY-MM-DD] - vX.X.X
-
-### Added
-- New feature or component
-
-### Changed
-- Modifications to existing code
-
-### Fixed
-- Bug fixes
-
-### Improved
-- Performance or UX improvements
-
-### Deprecated
-- Features to be removed
-
-### Removed
-- Deleted code or features
-
-**Files Modified:**
-- `path/to/file1`
-- `path/to/file2`
-
-**Notes:**
-- Any additional context
--->
