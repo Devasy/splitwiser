@@ -7,6 +7,14 @@
 ## [Unreleased]
 
 ### Added
+- **Error Boundary System:** Implemented a global React Error Boundary to catch render errors gracefully.
+  - **Features:**
+    - Dual-theme support (Glassmorphism & Neobrutalism) for the error fallback UI.
+    - "Retry" button to reset error state and re-render.
+    - "Home" button to navigate back to safety.
+    - Captures errors in `AppRoutes` and displays a user-friendly message instead of a white screen.
+  - **Technical:** Created `web/components/ErrorBoundary.tsx` using a hybrid Class+Functional approach to support Hooks in the fallback UI. Integrated into `web/App.tsx`.
+
 - Inline form validation in Auth page with real-time feedback and proper ARIA accessibility support (`aria-invalid`, `aria-describedby`, `role="alert"`).
 - Dashboard skeleton loading state (`DashboardSkeleton`) to improve perceived performance during data fetch.
 - Comprehensive `EmptyState` component for Groups and Friends pages to better guide new users.
