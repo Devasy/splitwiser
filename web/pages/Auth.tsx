@@ -304,6 +304,7 @@ export const Auth = () => {
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
                   className={`p-3 text-red-600 text-sm font-medium border border-red-100 ${isNeo ? 'bg-red-100 border-2 border-black rounded-none' : 'bg-red-50 rounded-lg'}`}
+                  role="alert"
                 >
                   {error}
                 </motion.div>
