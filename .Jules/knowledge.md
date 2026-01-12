@@ -38,6 +38,7 @@ mobile/
 ├── context/          # AuthContext
 ├── api/              # API client and service functions
 └── utils/            # Helpers (currency, balance calculations)
+```
 
 ---
 
@@ -101,6 +102,34 @@ colors: {
 >
   Content
 </Button>
+```
+
+### Clickable Cards & Accessibility
+
+**Date:** 2026-01-01
+**Context:** Making `motion.div` or non-button elements accessible
+
+When making a div clickable (like a card), you must ensure it's accessible:
+1.  **Role**: Add `role="button"`.
+2.  **TabIndex**: Add `tabIndex={0}` so it's focusable.
+3.  **Keyboard Handler**: Add `onKeyDown` to handle 'Enter' and 'Space'.
+4.  **Label**: Add `aria-label` to describe the action.
+5.  **Focus Styles**: Add visible focus styles (e.g., `focus:ring`).
+
+```tsx
+<motion.div
+  onClick={handleClick}
+  role="button"
+  tabIndex={0}
+  aria-label="View Details"
+  onKeyDown={(e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      handleClick();
+    }
+  }}
+  className="... focus:outline-none focus:ring-4 focus:ring-blue-500"
+>
 ```
 
 ### Card Component with Title/Action
@@ -208,6 +237,20 @@ interface BalanceSummary {
   groupsSummary: GroupBalanceSummary[];
 }
 ```
+
+---
+
+## Testing & Verification
+
+### Playwright Verification Patterns
+**Date:** 2026-01-01
+**Context:** Verifying accessibility changes with Playwright scripts
+
+When writing Playwright scripts to verify frontend changes without backend:
+
+1. **Auth Mocking:** You must mock `/users/me` persistently. If this call fails or returns 401, `AuthContext` will force a redirect to login, breaking navigation tests.
+2. **Route Matching:** Use specific route patterns (e.g., `**/users/me`) and ensure they don't accidentally swallow longer paths (like `**/users/me/balance-summary`) if using wildcards carelessly. Register specific paths before general ones if using `page.route` order dependence, or use specific globs.
+3. **Response Structure:** Mocks must match the structure expected by `axios` interceptors and components. If `axios` returns `res.data` as the body, and the component expects `res.data.groups`, the mock body should be `{"groups": [...]}` (not `{"data": {"groups": ...}}`).
 
 ---
 
