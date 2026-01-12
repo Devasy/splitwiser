@@ -44,8 +44,8 @@
 ### Mobile
 
 - [x] **[ux]** Pull-to-refresh with haptic feedback on all list screens
-  - Completed: 2026-01-01
-  - Files modified: `mobile/screens/HomeScreen.js`, `mobile/screens/GroupDetailsScreen.js`
+  - Completed: 2026-01-11
+  - Files modified: `mobile/screens/HomeScreen.js`, `mobile/screens/GroupDetailsScreen.js`, `mobile/screens/FriendsScreen.js`
   - Impact: Native feel, users can easily refresh data without losing context
 
 - [ ] **[ux]** Complete skeleton loading for HomeScreen groups

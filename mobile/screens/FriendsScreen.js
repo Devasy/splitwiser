@@ -1,6 +1,7 @@
 import { useIsFocused } from "@react-navigation/native";
 import { useContext, useEffect, useRef, useState } from "react";
 import { Alert, Animated, FlatList, StyleSheet, View } from "react-native";
+import * as Haptics from "expo-haptics";
 import {
   Appbar,
   Avatar,
@@ -17,16 +18,22 @@ const FriendsScreen = () => {
   const { token, user } = useContext(AuthContext);
   const [friends, setFriends] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [showTooltip, setShowTooltip] = useState(true);
   const isFocused = useIsFocused();
 
-  useEffect(() => {
-    const fetchData = async () => {
+  const fetchData = async (refresh = false) => {
+    if (refresh) {
+      setIsRefreshing(true);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    } else {
       setIsLoading(true);
-      try {
-        // Fetch friends balance + groups concurrently for group icons
-        const friendsResponse = await getFriendsBalance();
-        const friendsData = friendsResponse.data.friendsBalance || [];
+    }
+
+    try {
+      // Fetch friends balance + groups concurrently for group icons
+      const friendsResponse = await getFriendsBalance();
+      const friendsData = friendsResponse.data.friendsBalance || [];
         const groupsResponse = await getGroups();
         const groups = groupsResponse?.data?.groups || [];
         const groupMeta = new Map(
@@ -46,15 +53,21 @@ const FriendsScreen = () => {
           })),
         }));
 
-        setFriends(transformedFriends);
-      } catch (error) {
-        console.error("Failed to fetch friends balance data:", error);
-        Alert.alert("Error", "Failed to load friends balance data.");
-      } finally {
-        setIsLoading(false);
-      }
-    };
+      setFriends(transformedFriends);
+    } catch (error) {
+      console.error("Failed to fetch friends balance data:", error);
+      Alert.alert("Error", "Failed to load friends balance data.");
+    } finally {
+      setIsLoading(false);
+      setIsRefreshing(false);
+    }
+  };
 
+  const onRefresh = () => {
+    fetchData(true);
+  };
+
+  useEffect(() => {
     if (token && isFocused) {
       fetchData();
     }
@@ -235,6 +248,8 @@ const FriendsScreen = () => {
         ListEmptyComponent={
           <Text style={styles.emptyText}>No balances with friends yet.</Text>
         }
+        onRefresh={onRefresh}
+        refreshing={isRefreshing}
       />
     </View>
   );

@@ -183,6 +183,7 @@ Most screens use `<View style={{ flex: 1 }}>` - consider wrapping in `SafeAreaVi
 Always separate `isLoading` (initial blocking load) from `isRefreshing` (pull-to-refresh).
 
 **Bad Pattern:**
+
 ```javascript
 <FlatList
   refreshing={isLoading}
@@ -192,6 +193,7 @@ Always separate `isLoading` (initial blocking load) from `isRefreshing` (pull-to
 ```
 
 **Good Pattern:**
+
 ```javascript
 const [isLoading, setIsLoading] = useState(true); // Initial load
 const [isRefreshing, setIsRefreshing] = useState(false); // Pull-to-refresh
