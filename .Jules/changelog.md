@@ -7,6 +7,7 @@
 ## [Unreleased]
 
 ### Added
+- **Error Boundary System**: Implemented `ErrorBoundary` component to catch runtime errors and provide a "Reload" option, preventing white-screen crashes (`web/components/ErrorBoundary.tsx`, `web/App.tsx`).
 - Inline form validation in Auth page with real-time feedback and proper ARIA accessibility support (`aria-invalid`, `aria-describedby`, `role="alert"`).
 - Dashboard skeleton loading state (`DashboardSkeleton`) to improve perceived performance during data fetch.
 - Comprehensive `EmptyState` component for Groups and Friends pages to better guide new users.
