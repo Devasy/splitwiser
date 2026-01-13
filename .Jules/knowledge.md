@@ -87,6 +87,31 @@ colors: {
 
 ## Component Patterns
 
+### Error Boundary Pattern
+
+**Date:** 2026-01-13
+**Context:** Implementing global error handling
+
+React Error Boundaries must be class components. To use hooks (like `useTheme` or `useNavigate`) in the fallback UI, render a separate functional component inside the `render` method:
+
+```tsx
+class ErrorBoundary extends Component {
+  // ... lifecycle methods
+  render() {
+    if (this.state.hasError) {
+      return <ErrorFallback error={this.state.error} />;
+    }
+    return this.props.children;
+  }
+}
+
+// Functional component can use hooks
+const ErrorFallback = () => {
+  const { style } = useTheme();
+  return <div className={style === 'neo' ? '...' : '...'}>...</div>;
+}
+```
+
 ### Button Component Variants
 
 **Date:** 2026-01-01
@@ -291,6 +316,7 @@ When writing Playwright scripts to verify frontend changes without backend:
 1. **Auth Mocking:** You must mock `/users/me` persistently. If this call fails or returns 401, `AuthContext` will force a redirect to login, breaking navigation tests.
 2. **Route Matching:** Use specific route patterns (e.g., `**/users/me`) and ensure they don't accidentally swallow longer paths (like `**/users/me/balance-summary`) if using wildcards carelessly. Register specific paths before general ones if using `page.route` order dependence, or use specific globs.
 3. **Response Structure:** Mocks must match the structure expected by `axios` interceptors and components. If `axios` returns `res.data` as the body, and the component expects `res.data.groups`, the mock body should be `{"groups": [...]}` (not `{"data": {"groups": ...}}`).
+4. **Strict Mode & Text Locators:** When using `get_by_text()`, be aware that Playwright's strict mode will fail if multiple elements match (e.g., a chart label and a summary card). Use `.first` or a more specific locator chain to resolve ambiguity.
 
 ---
 
@@ -406,58 +432,26 @@ Tailwind breakpoints used:
 
 ---
 
-## Project Direction & Goals
-
-### What Splitwiser Is About
-
-**Date:** 2026-01-01
-
-Splitwiser is focused on (per README):
-1. **Modern expense splitting** - Making group expenses effortless
-2. **Group management** - Create and manage expense groups
-3. **Real-time synchronization** - Keep data synced across devices
-4. **Secure authentication** - JWT-based auth with refresh tokens
-5. **Receipt management** - Track and store receipt images
-6. **Debt simplification** - Minimize number of transactions
-7. **Multi-currency support** - Handle different currencies
-8. **Exceptional UX** - Beautiful, intuitive, delightful interactions
-9. **Cross-platform** - Web (React/Vite/TypeScript) and mobile (Expo/React Native)
-
-**Current Implementation Details:**
-- Web app uses dual-theme design system (Glassmorphism & Neobrutalism)
-- Mobile uses React Native Paper (Material Design)
-- Backend: FastAPI + MongoDB
-
-**NOT focused on:**
-- Generic business app features
-- Traditional accounting workflows
-- Enterprise features
-- One-off utilities
-
-**When picking tasks, ask:**
-- Does this improve expense splitting experience?
-- For web: Does it work in BOTH themes?
-- Will users notice and appreciate this?
-- Does it align with the README's core features?
-
----
-
-_Document errors and their solutions here as you encounter them._
-
-```markdown
-<!-- Template for documenting errors:
-### Error: [Error Name]
-**Date:** YYYY-MM-DD
-**Context:** What you were trying to do
-**Error Message:** The actual error
-**Solution:** How you fixed it
-**Files Affected:** List of files
--->
-```
-
----
-
 ## Recent Implementation Reviews
+
+### ✅ Successful PR Pattern: Error Boundary (#237)
+
+**Date:** 2026-01-13
+**Context:** Review of merged async agent PRs
+
+**What was implemented:**
+1. Created `ErrorBoundary` class component.
+2. Created `ErrorFallback` functional component using existing `Card` and `Button` UI.
+3. Integrated `ErrorBoundary` into `App.tsx`, wrapping `AppRoutes` and `ToastContainer`.
+4. Validated with simulated crash.
+
+**Why it succeeded:**
+- ✅ Correct use of Class component for Error Boundary.
+- ✅ Correct separation of Logic (Class) and UI (Functional/Hooks).
+- ✅ Reused existing accessible UI components.
+- ✅ Supported both themes (Neo/Glass) via `Card`.
+
+---
 
 ### ✅ Successful PR Pattern: Toast Notification System (#227)
 

@@ -34,8 +34,9 @@
   - Impact: Guides new users, makes app feel polished
   - Size: ~70 lines
 
-- [ ] **[ux]** Error boundary with retry for API failures
-  - Files: Create `web/components/ErrorBoundary.tsx`, wrap app
+- [x] **[ux]** Error boundary with retry for API failures
+  - Completed: 2026-01-13
+  - Files: `web/components/ErrorBoundary.tsx`, `web/App.tsx`
   - Context: Catch errors gracefully with retry button
   - Impact: App doesn't crash, users can recover
   - Size: ~60 lines
