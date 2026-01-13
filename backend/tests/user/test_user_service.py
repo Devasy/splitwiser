@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta, timezone
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from app.database import get_database
@@ -300,3 +300,98 @@ async def test_delete_user_invalid_object_id(mock_db_client, mock_get_database):
     # Expected result: False and never hit the DB
     mock_db_client.users.delete_one.assert_not_called()
     assert result is False
+
+
+# --- Tests for update_user_avatar_url ---
+
+
+@pytest.mark.asyncio
+async def test_update_user_avatar_url_success(mock_db_client, mock_get_database):
+    """Test successful user avatar URL update"""
+    user_id = "642f1e4a9b3c2d1f6a1b2c3d"
+    image_url = "https://example.com/avatar.jpg"
+
+    # Mock successful update (1 document modified)
+    mock_result = AsyncMock()
+    mock_result.modified_count = 1
+    mock_db_client.users.update_one.return_value = mock_result
+
+    result = await user_service.update_user_avatar_url(user_id, image_url)
+
+    assert result is True
+    mock_db_client.users.update_one.assert_called_once_with(
+        {"_id": ObjectId(user_id)}, {"$set": {"imageUrl": image_url}}
+    )
+
+
+@pytest.mark.asyncio
+async def test_update_user_avatar_url_no_document_modified(
+    mock_db_client, mock_get_database
+):
+    """Test when no document is modified (user not found)"""
+    user_id = "642f1e4a9b3c2d1f6a1b2c3d"
+    image_url = "https://example.com/avatar.jpg"
+
+    # Mock no documents modified
+    mock_result = AsyncMock()
+    mock_result.modified_count = 0
+    mock_db_client.users.update_one.return_value = mock_result
+
+    result = await user_service.update_user_avatar_url(user_id, image_url)
+
+    assert result is False
+
+
+@pytest.mark.asyncio
+async def test_update_user_avatar_url_invalid_object_id(
+    mock_db_client, mock_get_database
+):
+    """Test with invalid ObjectId format"""
+    invalid_user_id = "invalid_object_id"  # Not a 24-char hex string
+    image_url = "https://example.com/avatar.jpg"
+
+    with pytest.raises(Exception):  # ObjectId will raise an exception
+        await user_service.update_user_avatar_url(invalid_user_id, image_url)
+
+    # Should never hit the database
+    mock_db_client.users.update_one.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_update_user_avatar_url_empty_image_url(
+    mock_db_client, mock_get_database
+):
+    """Test updating with empty image URL"""
+    user_id = "642f1e4a9b3c2d1f6a1b2c3d"
+    image_url = ""
+
+    # Mock successful update
+    mock_result = AsyncMock()
+    mock_result.modified_count = 1
+    mock_db_client.users.update_one.return_value = mock_result
+
+    result = await user_service.update_user_avatar_url(user_id, image_url)
+
+    assert result is True
+    mock_db_client.users.update_one.assert_called_once_with(
+        {"_id": ObjectId(user_id)}, {"$set": {"imageUrl": image_url}}
+    )
+
+
+@pytest.mark.asyncio
+async def test_update_user_avatar_url_none_image_url(mock_db_client, mock_get_database):
+    """Test updating with None image URL"""
+    user_id = "642f1e4a9b3c2d1f6a1b2c3d"
+    image_url = None
+
+    # Mock successful update
+    mock_result = AsyncMock()
+    mock_result.modified_count = 1
+    mock_db_client.users.update_one.return_value = mock_result
+
+    result = await user_service.update_user_avatar_url(user_id, image_url)
+
+    assert result is True
+    mock_db_client.users.update_one.assert_called_once_with(
+        {"_id": ObjectId(user_id)}, {"$set": {"imageUrl": image_url}}
+    )
