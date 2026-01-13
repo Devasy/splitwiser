@@ -7,6 +7,7 @@
 ## [Unreleased]
 
 ### Added
+- Error Boundary system (`ErrorBoundary`, `ErrorFallback`) to catch and handle runtime errors gracefully with dual-theme support and retry mechanism.
 - Inline form validation in Auth page with real-time feedback and proper ARIA accessibility support (`aria-invalid`, `aria-describedby`, `role="alert"`).
 - Dashboard skeleton loading state (`DashboardSkeleton`) to improve perceived performance during data fetch.
 - Comprehensive `EmptyState` component for Groups and Friends pages to better guide new users.

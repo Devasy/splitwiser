@@ -338,6 +338,28 @@ Use `AnimatePresence` for exit animations.
 
 ---
 
+## Verification Patterns
+
+### Error Boundary Verification
+
+**Date:** 2026-01-14
+**Context:** Verifying `ErrorBoundary` works as expected
+
+Since Error Boundaries only catch errors during rendering, lifecycle methods, or constructors (and not in event handlers or async code by default, though React handles some), verifying them requires triggering a render error.
+
+**How to verify:**
+1. Temporarily modify a component (e.g., `Auth.tsx`) to throw an error inside the render body:
+   ```tsx
+   if (typeof window !== 'undefined') {
+     throw new Error('Test Error');
+   }
+   ```
+2. Navigate to that page.
+3. Verify the fallback UI appears.
+4. **Revert the change** immediately after verification.
+
+---
+
 ## Best Practices Learned
 
 ### 1. Accessibility First
