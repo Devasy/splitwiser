@@ -336,6 +336,13 @@ Common patterns:
 
 Use `AnimatePresence` for exit animations.
 
+### Testing React Error Boundaries
+**Date:** 2026-01-14
+**Context:** Verifying global Error Boundary
+
+React Error Boundaries **do not catch errors inside event handlers**. They only catch errors during the render phase, in lifecycle methods, and in constructors of the whole tree below them.
+To test an Error Boundary, you must throw an error *during render* (e.g., inside the component body based on state), not inside an `onClick` handler.
+
 ---
 
 ## Best Practices Learned

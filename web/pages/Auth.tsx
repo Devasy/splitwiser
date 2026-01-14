@@ -334,6 +334,7 @@ export const Auth = () => {
                   : 'Already have an account? Log In'}
               </button>
             </div>
+
           </div>
         </div>
       </div>
