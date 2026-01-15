@@ -7,6 +7,7 @@
 ## [Unreleased]
 
 ### Added
+- **Error Boundary:** Added a global `ErrorBoundary` component that catches unexpected errors and displays a friendly, dual-themed fallback UI with a retry action.
 - Inline form validation in Auth page with real-time feedback and proper ARIA accessibility support (`aria-invalid`, `aria-describedby`, `role="alert"`).
 - Dashboard skeleton loading state (`DashboardSkeleton`) to improve perceived performance during data fetch.
 - Comprehensive `EmptyState` component for Groups and Friends pages to better guide new users.
