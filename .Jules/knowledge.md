@@ -44,6 +44,20 @@ mobile/
 
 ## Theming System
 
+### Error Boundary Pattern
+
+**Date:** 2026-02-01
+**Context:** Implemented global error handling
+
+**Implementation:**
+- Use Class Component for `componentDidCatch`
+- Use inner Functional Component for UI to support hooks (`useTheme`)
+- Place inside `ThemeProvider` but outside `Router` or deeply nested providers
+- Use `import.meta.env.DEV` to show stack traces in development
+- Ensure fallback UI supports both `NEOBRUTALISM` and `GLASSMORPHISM`
+
+**Files:** `web/components/ErrorBoundary.tsx`
+
 ### Web Dual-Theme Pattern
 **Date:** 2026-01-01
 **Context:** Understanding theme-switching mechanism
