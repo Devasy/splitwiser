@@ -246,14 +246,14 @@ async def test_calculate_optimized_settlements_advanced(expense_service):
 
         # Verify optimization: should result in 1 transaction instead of 2
         assert len(result) == 1
-        # The optimized result should be Alice paying Charlie $100
-        # (Alice owes Bob $100, Bob owes Charlie $100 -> Alice owes Charlie $100)
+        # The optimized result should be Charlie paying Alice $100
+        # (Bob owes Alice $100, Charlie owes Bob $100 -> Charlie owes Alice $100)
         settlement = result[0]
         assert settlement.amount == 100.0
-        assert settlement.fromUserName == "Alice"
-        assert settlement.toUserName == "Charlie"
-        assert settlement.fromUserId == str(user_a_id)
-        assert settlement.toUserId == str(user_c_id)
+        assert settlement.fromUserName == "Charlie"
+        assert settlement.toUserName == "Alice"
+        assert settlement.fromUserId == str(user_c_id)
+        assert settlement.toUserId == str(user_a_id)
 
 
 @pytest.mark.asyncio
