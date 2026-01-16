@@ -1,5 +1,8 @@
+import { motion } from 'framer-motion';
 import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { THEMES } from '../constants';
+import { useTheme } from '../contexts/ThemeContext';
 import { useToast } from '../contexts/ToastContext';
 import { getImportStatus, handleSplitwiseCallback } from '../services/api';
 
@@ -7,6 +10,8 @@ export const SplitwiseCallback = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { addToast } = useToast();
+  const { style } = useTheme();
+  const isNeo = style === THEMES.NEOBRUTALISM;
   const [status, setStatus] = useState('Processing authorization...');
   const [progress, setProgress] = useState(0);
   const [importing, setImporting] = useState(true);
@@ -45,12 +50,12 @@ export const SplitwiseCallback = () => {
 
       try {
         setStatus('Fetching your Splitwise data...');
-        
+
         // First, exchange OAuth code for access token and get preview
         console.log('Exchanging OAuth code for token...');
         const tokenResponse = await handleSplitwiseCallback(code, state || '');
         console.log('Token exchange response:', tokenResponse.data);
-        
+
         // Check if we got groups in the response (from preview)
         if (tokenResponse.data.groups && tokenResponse.data.groups.length > 0) {
           // Navigate to group selection
@@ -63,7 +68,7 @@ export const SplitwiseCallback = () => {
           });
           return;
         }
-        
+
         // If no groups or preview data, start import directly (backward compatibility)
         const jobId = tokenResponse.data.import_job_id || tokenResponse.data.importJobId;
 
@@ -74,17 +79,15 @@ export const SplitwiseCallback = () => {
 
         console.log('Import job ID:', jobId);
         addToast('Authorization successful! Starting import...', 'success');
-        
+
         startProgressPolling(jobId);
-        
+
       } catch (error: any) {
         console.error('Callback error:', error);
-        if (showToast) {
-          showToast(
-            error.response?.data?.detail || 'Failed to process authorization',
-            'error'
-          );
-        }
+        addToast(
+          error.response?.data?.detail || 'Failed to process authorization',
+          'error'
+        );
         setImporting(false);
         setTimeout(() => navigate('/import/splitwise'), 2000);
       }
@@ -95,15 +98,15 @@ export const SplitwiseCallback = () => {
 
   const startProgressPolling = (jobId: string) => {
     setStatus('Import started...');
-    
+
     // Poll for progress
     const pollInterval = setInterval(async () => {
       try {
         const statusResponse = await getImportStatus(jobId);
         const statusData = statusResponse.data;
-        
+
         console.log('Status response:', statusData);
-        
+
         // Log errors if any
         if (statusData.errors && statusData.errors.length > 0) {
           console.warn('Import errors:', statusData.errors);
@@ -112,9 +115,9 @@ export const SplitwiseCallback = () => {
         // Backend returns nested progress object with camelCase
         const progressPercentage = statusData.progress?.percentage || 0;
         const currentStage = statusData.progress?.currentStage || 'Processing...';
-        
+
         console.log('Progress:', progressPercentage, '% -', currentStage, '- Status:', statusData.status);
-        
+
         setProgress(progressPercentage);
         setStatus(currentStage);
 
@@ -137,39 +140,49 @@ export const SplitwiseCallback = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center px-4">
-      <div className="max-w-md w-full bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8">
+    <div className={`min-h-screen py-8 px-4 flex items-center justify-center transition-colors duration-300 ${isNeo ? 'bg-gray-100' : 'bg-gray-50 dark:bg-gray-900'}`}>
+      <motion.div
+        initial={{ y: 20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        className={`max-w-md w-full ${isNeo
+          ? 'bg-white border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-8 rounded-none'
+          : 'bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8'}`}
+      >
         <div className="text-center mb-6">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mb-4"></div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+          <div className={`inline-block animate-spin rounded-full h-10 w-10 border-2 mb-4 ${isNeo ? 'border-black border-t-transparent' : 'border-blue-500 border-t-transparent'}`}></div>
+          <h1 className={`text-2xl md:text-3xl font-bold mb-2 ${isNeo ? 'text-black' : 'text-gray-900 dark:text-white'}`}>
             {importing ? 'Importing Data' : 'Processing'}
-          </h2>
-          <p className="text-gray-600 dark:text-gray-400">{status}</p>
+          </h1>
+          <p className={`text-base ${isNeo ? 'text-black/70' : 'text-gray-600 dark:text-gray-400'}`}>{status}</p>
         </div>
 
         {importing && (
           <div className="space-y-3">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-600 dark:text-gray-400">Progress</span>
-              <span className="font-medium text-gray-900 dark:text-white">
+            <div className="flex items-center justify-between">
+              <span className={`text-sm font-medium ${isNeo ? 'text-black/70' : 'text-gray-600 dark:text-gray-400'}`}>Progress</span>
+              <span className={`text-lg font-bold ${isNeo ? 'text-black' : 'text-gray-900 dark:text-white'}`}>
                 {progress.toFixed(0)}%
               </span>
             </div>
-            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
+            <div className={`w-full h-2 ${isNeo ? 'bg-gray-200 border border-black' : 'bg-gray-200 dark:bg-gray-700 rounded-full'}`}>
               <div
-                className="bg-blue-500 h-3 rounded-full transition-all duration-300 ease-out"
+                className={`h-full transition-all duration-300 ease-out ${isNeo
+                  ? 'bg-blue-500'
+                  : 'bg-blue-500 rounded-full'}`}
                 style={{ width: `${progress}%` }}
               />
             </div>
           </div>
         )}
 
-        <div className="mt-6 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-          <p className="text-sm text-blue-800 dark:text-blue-200">
+        <div className={`mt-6 p-4 ${isNeo
+          ? 'bg-blue-50 border-2 border-black rounded-none'
+          : 'bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg'}`}>
+          <p className={`text-sm ${isNeo ? 'text-black/80' : 'text-blue-800 dark:text-blue-200'}`}>
             Please don't close this page until the import is complete.
           </p>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 };
