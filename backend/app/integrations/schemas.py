@@ -59,6 +59,8 @@ class ImportOptions(BaseModel):
     importComments: bool = True
     importArchivedExpenses: bool = False
     confirmWarnings: bool = False
+    acknowledgeWarnings: bool = False  # Set to True to proceed past blocking warnings
+    selectedGroupIds: List[str] = []  # Splitwise group IDs to import
 
 
 class ImportPreviewRequest(BaseModel):
@@ -67,18 +69,32 @@ class ImportPreviewRequest(BaseModel):
     provider: ImportProvider = ImportProvider.SPLITWISE
 
 
+class ImportPreviewGroup(BaseModel):
+    """Group information for preview."""
+
+    splitwiseId: str
+    name: str
+    currency: str
+    memberCount: int
+    expenseCount: int
+    totalAmount: float
+    imageUrl: Optional[str] = None
+
+
 class ImportPreviewWarning(BaseModel):
     """Warning about potential import issues."""
 
     type: str
     message: str
     resolution: Optional[str] = None
+    blocking: bool = False  # If True, import should not proceed without acknowledgment
 
 
 class ImportPreviewResponse(BaseModel):
     """Response with import preview information."""
 
     splitwiseUser: Optional[Dict[str, Any]] = None
+    groups: List[ImportPreviewGroup] = []
     summary: Dict[str, Any]
     warnings: List[ImportPreviewWarning] = []
     estimatedDuration: str
@@ -176,5 +192,7 @@ class OAuthCallbackResponse(BaseModel):
 class OAuthCallbackRequest(BaseModel):
     """Request body for OAuth callback."""
 
-    code: str
+    code: Optional[str] = None
     state: Optional[str] = None
+    accessToken: Optional[str] = None  # Used when returning from group selection
+    options: Optional[ImportOptions] = None

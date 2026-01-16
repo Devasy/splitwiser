@@ -17,6 +17,12 @@ class SettlementStatus(str, Enum):
     CANCELLED = "cancelled"
 
 
+class Currency(str, Enum):
+    USD = "USD"
+    INR = "INR"
+    EUR = "EUR"
+
+
 class ExpenseSplit(BaseModel):
     userId: str
     amount: float = Field(..., gt=0)
@@ -29,6 +35,7 @@ class ExpenseCreateRequest(BaseModel):
     splits: List[ExpenseSplit]
     splitType: SplitType = SplitType.EQUAL
     paidBy: str = Field(..., description="User ID of who paid for the expense")
+    currency: Optional[Currency] = None
     tags: Optional[List[str]] = []
     receiptUrls: Optional[List[str]] = []
 
@@ -95,6 +102,7 @@ class ExpenseResponse(BaseModel):
     amount: float
     splits: List[ExpenseSplit]
     splitType: SplitType
+    currency: Currency = Currency.USD
     tags: List[str] = []
     receiptUrls: List[str] = []
     comments: Optional[List[ExpenseComment]] = []
@@ -114,6 +122,7 @@ class Settlement(BaseModel):
     payerName: str
     payeeName: str
     amount: float
+    currency: Currency = Currency.USD
     status: SettlementStatus
     description: Optional[str] = None
     paidAt: Optional[datetime] = None

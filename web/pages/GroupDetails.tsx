@@ -6,7 +6,7 @@ import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Modal } from '../components/ui/Modal';
 import { Skeleton } from '../components/ui/Skeleton';
-import { THEMES } from '../constants';
+import { CURRENCIES, THEMES } from '../constants';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useToast } from '../contexts/ToastContext';
@@ -24,6 +24,7 @@ import {
     updateGroup
 } from '../services/api';
 import { Expense, Group, GroupMember, SplitType } from '../types';
+import { formatCurrency } from '../utils/formatters';
 
 type UnequalMode = 'amount' | 'percentage' | 'shares';
 
@@ -49,6 +50,11 @@ export const GroupDetails = () => {
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<'expenses' | 'settlements'>('expenses');
 
+    // Pagination State
+    const [page, setPage] = useState(1);
+    const [hasMore, setHasMore] = useState(true);
+    const [loadingMore, setLoadingMore] = useState(false);
+
     // Modals
     const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
     const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
@@ -72,6 +78,7 @@ export const GroupDetails = () => {
 
     // Group Settings State
     const [editGroupName, setEditGroupName] = useState('');
+    const [editGroupCurrency, setEditGroupCurrency] = useState('USD');
     const [settingsTab, setSettingsTab] = useState<'info' | 'members' | 'danger'>('info');
     const [copied, setCopied] = useState(false);
 
@@ -100,7 +107,7 @@ export const GroupDetails = () => {
                 if (other) setPaymentPayeeId(other.userId);
             }
         }
-    }, [members, group, user, editingExpenseId]);
+    }, [members, group, user, editingExpenseId, payerId, paymentPayerId, paymentPayeeId]);
 
     const fetchData = async () => {
         if (!id) return;
@@ -114,13 +121,33 @@ export const GroupDetails = () => {
             ]);
             setGroup(groupRes.data);
             setExpenses(expRes.data.expenses);
+            setPage(1);
+            setHasMore(expRes.data.pagination?.page < expRes.data.pagination?.totalPages);
             setMembers(memRes.data);
             setSettlements(setRes.data.optimizedSettlements);
             setEditGroupName(groupRes.data.name);
+            setEditGroupCurrency(groupRes.data.currency || 'USD');
         } catch (err) {
             console.error(err);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const loadMoreExpenses = async () => {
+        if (!id || !hasMore || loadingMore) return;
+        setLoadingMore(true);
+        try {
+            const nextPage = page + 1;
+            const res = await getExpenses(id, nextPage);
+            setExpenses(prev => [...prev, ...res.data.expenses]);
+            setPage(nextPage);
+            setHasMore(res.data.pagination?.page < res.data.pagination?.totalPages);
+        } catch (err) {
+            console.error(err);
+            addToast("Failed to load more expenses", "error");
+        } finally {
+            setLoadingMore(false);
         }
     };
 
@@ -237,6 +264,7 @@ export const GroupDetails = () => {
             paidBy: payerId,
             splitType,
             splits: requestSplits,
+            currency,
         };
 
         try {
@@ -272,7 +300,7 @@ export const GroupDetails = () => {
     const handleRecordPayment = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!id) return;
-        
+
         const numAmount = parseFloat(paymentAmount);
         if (paymentPayerId === paymentPayeeId) {
             alert('Payer and payee cannot be the same');
@@ -282,7 +310,7 @@ export const GroupDetails = () => {
             alert('Please enter a valid amount');
             return;
         }
-        
+
         try {
             await createSettlement(id, {
                 payer_id: paymentPayerId,
@@ -302,9 +330,12 @@ export const GroupDetails = () => {
         e.preventDefault();
         if (!id) return;
         try {
-            await updateGroup(id, { name: editGroupName });
-            setIsSettingsModalOpen(false);
+            await updateGroup(id, {
+                name: editGroupName,
+                currency: editGroupCurrency
+            });
             fetchData();
+            setIsSettingsModalOpen(false);
             addToast('Group updated successfully!', 'success');
         } catch (err) {
             addToast("Failed to update group", 'error');
@@ -472,7 +503,7 @@ export const GroupDetails = () => {
                                     onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openEditExpense(expense); } }}
                                     tabIndex={0}
                                     role="button"
-                                    aria-label={`Expense: ${expense.description}, ${group.currency} ${expense.amount.toFixed(2)}`}
+                                    aria-label={`Expense: ${expense.description}, ${formatCurrency(expense.amount, group?.currency)}`}
                                     className={`p-5 flex items-center gap-5 cursor-pointer group relative overflow-hidden ${style === THEMES.NEOBRUTALISM
                                         ? 'bg-white border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] rounded-none'
                                         : 'bg-white/5 border border-white/10 rounded-2xl backdrop-blur-sm hover:bg-white/10 transition-all'
@@ -491,7 +522,7 @@ export const GroupDetails = () => {
                                                 {members.find(m => m.userId === expense.paidBy)?.user?.name?.charAt(0)}
                                             </div>
                                             <p className="text-sm opacity-60 truncate">
-                                                <span className="font-semibold text-foreground">{members.find(m => m.userId === expense.paidBy)?.user?.name || 'Unknown'}</span> paid <span className="font-bold">{group.currency} {expense.amount.toFixed(2)}</span>
+                                                <span className="font-semibold text-foreground">{members.find(m => m.userId === expense.paidBy)?.user?.name || 'Unknown'}</span> paid <span className="font-bold">{formatCurrency(expense.amount, group?.currency)}</span>
                                             </p>
                                         </div>
                                     </div>
@@ -510,6 +541,18 @@ export const GroupDetails = () => {
                                 </div>
                                 <p className="text-xl font-bold">No expenses yet</p>
                                 <p className="text-sm">Add your first expense to get started!</p>
+                            </div>
+                        )}
+
+                        {hasMore && expenses.length > 0 && (
+                            <div className="flex justify-center py-4">
+                                <Button
+                                    variant="secondary"
+                                    onClick={(e) => { e.stopPropagation(); loadMoreExpenses(); }}
+                                    disabled={loadingMore}
+                                >
+                                    {loadingMore ? 'Loading...' : 'Load More'}
+                                </Button>
                             </div>
                         )}
                     </motion.div>
@@ -545,7 +588,7 @@ export const GroupDetails = () => {
                                         <div className="h-0.5 w-full bg-gray-200 dark:bg-gray-700 relative">
                                             <div className="absolute right-0 top-1/2 -translate-y-1/2 w-2 h-2 bg-gray-400 rounded-full" />
                                         </div>
-                                        <span className="font-mono font-black text-xl">{group.currency} {s.amount.toFixed(2)}</span>
+                                        <span className="font-mono font-black text-xl">{formatCurrency(s.amount, group?.currency)}</span>
                                     </div>
 
                                     <div className="flex flex-col items-center gap-2">
@@ -800,7 +843,7 @@ export const GroupDetails = () => {
                         </select>
                     </div>
                     <Input
-                        label={`Amount (${group.currency})`}
+                        label={`Amount (${group?.currency || 'USD'})`}
                         type="number"
                         placeholder="0.00"
                         value={paymentAmount}
@@ -850,6 +893,26 @@ export const GroupDetails = () => {
                                     disabled={!isAdmin}
                                     required
                                 />
+                                <div className="space-y-1.5">
+                                    <label className={`text-sm font-bold ${style === THEMES.NEOBRUTALISM ? 'text-black uppercase' : 'opacity-70'}`}>
+                                        Group Currency
+                                    </label>
+                                    <select
+                                        value={editGroupCurrency}
+                                        onChange={e => setEditGroupCurrency(e.target.value)}
+                                        disabled={!isAdmin}
+                                        className={`w-full p-3 font-bold transition-all outline-none ${style === THEMES.NEOBRUTALISM
+                                            ? 'bg-white border-2 border-black rounded-none'
+                                            : 'bg-white/10 dark:bg-white/5 border border-white/20 dark:border-white/10 rounded-xl'
+                                            }`}
+                                    >
+                                        {Object.values(CURRENCIES).map((c) => (
+                                            <option key={c.code} value={c.code}>
+                                                {c.code} ({c.symbol}) - {c.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
                                 {isAdmin && <Button type="submit" className="w-full">Update Group</Button>}
                             </form>
                             <div className={`p-4 ${style === THEMES.NEOBRUTALISM ? 'bg-gray-100 border-2 border-black rounded-none' : 'bg-black/5 dark:bg-white/5 rounded-lg'}`}>
@@ -919,8 +982,8 @@ export const GroupDetails = () => {
                         </div>
                     )}
                 </div>
-            </Modal>
-        </div>
+            </Modal >
+        </div >
     );
 };
 

@@ -3,10 +3,14 @@ Import service for managing data imports from external providers.
 """
 
 import asyncio
+import secrets
+import string
 from datetime import datetime, timezone
 from typing import Dict, List, Optional
 
 from app.config import logger
+from app.database import get_database, mongodb
+from app.expenses.service import expense_service
 from app.integrations.schemas import (
     ImportError,
     ImportOptions,
@@ -31,6 +35,19 @@ class ImportService:
         self.users = db["users"]
         self.groups = db["groups"]
         self.expenses = db["expenses"]
+
+    def _generate_join_code(self, length: int = 6) -> str:
+        """Generate a random alphanumeric join code for imported groups"""
+        characters = string.ascii_uppercase + string.digits
+        return "".join(secrets.choice(characters) for _ in range(length))
+
+    def _ensure_string_id(self, id_value) -> str:
+        """Convert ObjectId or any ID to string format for consistency."""
+        if id_value is None:
+            return None
+        if isinstance(id_value, ObjectId):
+            return str(id_value)
+        return str(id_value)
 
     async def preview_splitwise_import(
         self, user_id: str, api_key: str, consumer_key: str, consumer_secret: str
@@ -59,16 +76,77 @@ class ImportService:
             friends = client.get_friends()
             groups = client.get_groups()
 
-            # Count expenses (without fetching all)
-            sample_expenses = client.get_expenses(limit=10)
-
             # Transform user data
             splitwise_user = SplitwiseClient.transform_user(current_user)
+
+            # Build detailed group preview list
+            group_previews = []
+            total_expenses = 0
+
+            for group in groups:
+                # Get expenses for this group to count them
+                group_expenses = client.get_expenses(group_id=group.getId(), limit=1000)
+                expense_count = len(group_expenses)
+                total_expenses += expense_count
+
+                # Calculate total amount for the group
+                total_amount = sum(float(exp.getCost() or 0) for exp in group_expenses)
+
+                # Get currency from first expense, or default to USD
+                currency = "USD"
+                if group_expenses:
+                    currency = (
+                        group_expenses[0].getCurrencyCode()
+                        if hasattr(group_expenses[0], "getCurrencyCode")
+                        else "USD"
+                    )
+
+                group_previews.append(
+                    {
+                        "splitwiseId": str(group.getId()),
+                        "name": group.getName(),
+                        "currency": currency,
+                        "memberCount": (
+                            len(group.getMembers()) if group.getMembers() else 0
+                        ),
+                        "expenseCount": expense_count,
+                        "totalAmount": total_amount,
+                        "imageUrl": (
+                            getattr(group, "avatar", {}).get("large")
+                            if hasattr(group, "avatar")
+                            else None
+                        ),
+                    }
+                )
 
             # Check for warnings
             warnings = []
 
-            # Check if email already exists
+            # Check if Splitwise account email matches logged-in user (critical validation)
+            current_splitwiser_user = await self.users.find_one(
+                {"_id": ObjectId(user_id)}
+            )
+            if current_splitwiser_user:
+                logged_in_email = (
+                    (current_splitwiser_user.get("email") or "").lower().strip()
+                )
+                splitwise_email = (splitwise_user.get("email") or "").lower().strip()
+
+                if (
+                    logged_in_email
+                    and splitwise_email
+                    and logged_in_email != splitwise_email
+                ):
+                    warnings.append(
+                        {
+                            "type": "email_mismatch",
+                            "message": f"Splitwise account ({splitwise_email}) does not match your Splitwiser account ({logged_in_email})",
+                            "resolution": "Sign in with the matching account to import your data, or link your accounts first.",
+                            "blocking": True,
+                        }
+                    )
+
+            # Check if email already exists (different user)
             existing_user = await self.users.find_one(
                 {"email": splitwise_user["email"]}
             )
@@ -76,26 +154,26 @@ class ImportService:
                 warnings.append(
                     {
                         "type": "email_conflict",
-                        "message": f"Email {splitwise_user['email']} already exists",
-                        "resolution": "Will link to existing account",
+                        "message": f"Email {splitwise_user['email']} already exists in another account",
+                        "resolution": "Will link to existing account if it's yours",
+                        "blocking": False,
                     }
                 )
 
             # Estimate duration based on data size
-            total_items = (
-                len(friends) + len(groups) + (len(sample_expenses) * 10)
-            )  # Rough estimate
-            estimated_minutes = max(3, int(total_items / 100))
+            total_items = len(friends) + len(groups) + total_expenses
+            estimated_minutes = max(3, int(total_items / 50))
 
             return {
                 "splitwiseUser": splitwise_user,
+                "groups": group_previews,
                 "summary": {
                     "groups": len(groups),
-                    "expenses": len(sample_expenses) * 10,  # Rough estimate
+                    "expenses": total_expenses,
                     "friends": len(friends),
-                    "estimatedDuration": f"{estimated_minutes}-{estimated_minutes + 2} minutes",
                 },
                 "warnings": warnings,
+                "estimatedDuration": f"{estimated_minutes}-{estimated_minutes + 2} minutes",
             }
         except Exception as e:
             logger.error(f"Error previewing Splitwise import: {e}")
@@ -210,6 +288,81 @@ class ImportService:
             )
             await self._update_checkpoint(import_job_id, "userImported", True)
 
+            # Merge any existing placeholders for this Splitwise ID
+            splitwise_id = user_data["splitwiseId"]
+            placeholders = (
+                await self.db["users"]
+                .find(
+                    {
+                        "splitwiseId": splitwise_id,
+                        "isPlaceholder": True,
+                        "_id": {"$ne": ObjectId(user_id)},
+                    }
+                )
+                .to_list(None)
+            )
+
+            if placeholders:
+                logger.info(
+                    f"Merging {len(placeholders)} placeholders for Splitwise ID {splitwise_id} into user {user_id}"
+                )
+                for p in placeholders:
+                    p_id_str = str(p["_id"])
+
+                    # Update groups where placeholder is a member
+                    await self.db["groups"].update_many(
+                        {"members.userId": p_id_str},
+                        {
+                            "$set": {
+                                "members.$.userId": user_id,
+                                "members.$.isPlaceholder": False,
+                            }
+                        },
+                    )
+
+                    # Update groups created by placeholder
+                    await self.db["groups"].update_many(
+                        {"createdBy": p_id_str}, {"$set": {"createdBy": user_id}}
+                    )
+
+                    # Update expenses created by placeholder
+                    await self.db["expenses"].update_many(
+                        {"createdBy": p_id_str}, {"$set": {"createdBy": user_id}}
+                    )
+
+                    # Update expenses paid by placeholder
+                    await self.db["expenses"].update_many(
+                        {"paidBy": p_id_str}, {"$set": {"paidBy": user_id}}
+                    )
+
+                    # Update expense splits for placeholder
+                    await self.db["expenses"].update_many(
+                        {"splits.userId": p_id_str},
+                        {"$set": {"splits.$.userId": user_id}},
+                    )
+
+                    # Update settlements where placeholder is payer or payee
+                    await self.db["settlements"].update_many(
+                        {"payerId": p_id_str}, {"$set": {"payerId": user_id}}
+                    )
+                    await self.db["settlements"].update_many(
+                        {"payeeId": p_id_str}, {"$set": {"payeeId": user_id}}
+                    )
+
+                    # Delete the placeholder user
+                    await self.db["users"].delete_one({"_id": p["_id"]})
+
+            # Create ID mapping for the importing user so they can be found during group import
+            await self.id_mappings.insert_one(
+                {
+                    "importJobId": ObjectId(import_job_id),
+                    "entityType": "user",
+                    "splitwiseId": user_data["splitwiseId"],
+                    "splitwiserId": user_id,  # The current user's ID (already a string)
+                    "createdAt": datetime.now(timezone.utc),
+                }
+            )
+
             # Step 2: Import friends
             logger.info(f"Importing friends for job {import_job_id}")
             friends = client.get_friends()
@@ -219,6 +372,13 @@ class ImportService:
             # Step 3: Import groups
             logger.info(f"Importing groups for job {import_job_id}")
             groups = client.get_groups()
+
+            # Filter groups if specific ones were selected
+            if options.selectedGroupIds:
+                selected_ids = set(options.selectedGroupIds)
+                groups = [g for g in groups if str(g.getId()) in selected_ids]
+                logger.info(f"Filtered to {len(groups)} selected groups")
+
             await self._import_groups(import_job_id, user_id, groups)
 
             # Step 4: Import expenses
@@ -295,14 +455,15 @@ class ImportService:
                 await self._record_error(import_job_id, "friend_import", str(e))
 
     async def _import_groups(self, import_job_id: str, user_id: str, groups: List):
-        """Import groups."""
+        """Import groups with all members including unregistered ones."""
         for group in groups:
             try:
                 group_data = SplitwiseClient.transform_group(group)
 
-                # Map member IDs to Splitwiser user IDs
+                # Map member IDs - include ALL members (registered and unregistered)
                 mapped_members = []
                 for member in group_data["members"]:
+                    # Check if member is already mapped (friend that was imported)
                     mapping = await self.id_mappings.find_one(
                         {
                             "importJobId": ObjectId(import_job_id),
@@ -312,24 +473,168 @@ class ImportService:
                     )
 
                     if mapping:
+                        # Registered user - use their Splitwiser ID as string
+                        # All members are admins since Splitwise has no member/admin roles
                         mapped_members.append(
                             {
-                                "userId": ObjectId(mapping["splitwiserId"]),
-                                "role": (
-                                    "admin" if member["userId"] == user_id else "member"
+                                "userId": self._ensure_string_id(
+                                    mapping["splitwiserId"]
                                 ),
+                                "role": "admin",  # All Splitwise members are admins
                                 "joinedAt": datetime.now(timezone.utc),
+                                "isPlaceholder": False,
                             }
                         )
+                    else:
+                        # Unregistered user - check if they already exist by email or Splitwise ID
+                        existing_user = None
+
+                        # First check by email (if available)
+                        if member.get("email"):
+                            existing_user = await self.users.find_one(
+                                {"email": member["email"]}
+                            )
+
+                        # If not found by email, check by Splitwise ID
+                        if not existing_user:
+                            existing_user = await self.users.find_one(
+                                {"splitwiseId": member["splitwiseUserId"]}
+                            )
+
+                        if existing_user:
+                            # User exists - create mapping and use their ID as string
+                            existing_user_id = str(existing_user["_id"])
+
+                            # Create mapping
+                            await self.id_mappings.insert_one(
+                                {
+                                    "importJobId": ObjectId(import_job_id),
+                                    "entityType": "user",
+                                    "splitwiseId": member["splitwiseUserId"],
+                                    "splitwiserId": existing_user_id,
+                                    "createdAt": datetime.now(timezone.utc),
+                                }
+                            )
+
+                            mapped_members.append(
+                                {
+                                    "userId": self._ensure_string_id(existing_user_id),
+                                    "role": "admin",  # All Splitwise members are admins
+                                    "joinedAt": datetime.now(timezone.utc),
+                                    "isPlaceholder": existing_user.get(
+                                        "isPlaceholder", False
+                                    ),
+                                }
+                            )
+                        else:
+                            # Create placeholder user
+                            placeholder_id = ObjectId()
+                            placeholder_user = {
+                                "_id": placeholder_id,
+                                "name": member.get("name", "Unknown User"),
+                                "email": member.get(
+                                    "email"
+                                ),  # Email for future mapping
+                                "imageUrl": member.get("imageUrl"),
+                                "splitwiseId": member["splitwiseUserId"],
+                                "isPlaceholder": True,  # Mark as placeholder
+                                "passwordHash": None,
+                                "createdAt": datetime.now(timezone.utc),
+                                "importedFrom": "splitwise",
+                                "importedAt": datetime.now(timezone.utc),
+                            }
+
+                            # Insert placeholder user
+                            await self.users.insert_one(placeholder_user)
+
+                            # Create mapping for placeholder
+                            await self.id_mappings.insert_one(
+                                {
+                                    "importJobId": ObjectId(import_job_id),
+                                    "entityType": "user",
+                                    "splitwiseId": member["splitwiseUserId"],
+                                    "splitwiserId": str(placeholder_id),
+                                    "createdAt": datetime.now(timezone.utc),
+                                }
+                            )
+
+                            mapped_members.append(
+                                {
+                                    "userId": self._ensure_string_id(placeholder_id),
+                                    "role": "admin",  # All Splitwise members are admins
+                                    "joinedAt": datetime.now(timezone.utc),
+                                    "isPlaceholder": True,
+                                }
+                            )
+
+                # Ensure the importing user is always in the members array as admin
+                importing_user_ids = [m["userId"] for m in mapped_members]
+                if user_id not in importing_user_ids:
+                    # Add importing user as admin if not already in members
+                    mapped_members.insert(
+                        0,
+                        {
+                            "userId": user_id,
+                            "role": "admin",
+                            "joinedAt": datetime.now(timezone.utc),
+                            "isPlaceholder": False,
+                        },
+                    )
+
+                # Check if group already exists for this user (imported previously)
+                existing_group = await self.groups.find_one(
+                    {
+                        "splitwiseGroupId": group_data["splitwiseGroupId"],
+                        "members.userId": user_id,
+                    }
+                )
+
+                if existing_group:
+                    logger.info(
+                        f"Group {group_data['name']} already imported as {existing_group['_id']}, reusing."
+                    )
+                    # Store mapping for this job so expenses can be linked
+                    await self.id_mappings.insert_one(
+                        {
+                            "importJobId": ObjectId(import_job_id),
+                            "entityType": "group",
+                            "splitwiseId": group_data["splitwiseGroupId"],
+                            "splitwiserId": str(existing_group["_id"]),
+                            "createdAt": datetime.now(timezone.utc),
+                        }
+                    )
+
+                    # Update existing group metadata (e.g. currency if it changed/was default)
+                    await self.groups.update_one(
+                        {"_id": existing_group["_id"]},
+                        {
+                            "$set": {
+                                "currency": group_data["currency"],
+                                "isDeleted": False,  # Reactivate group if it was deleted
+                                "archived": False,  # Unarchive if it was archived
+                                "updatedAt": datetime.now(timezone.utc),
+                            }
+                        },
+                    )
+
+                    await self._increment_summary(import_job_id, "groupsCreated")
+                    await self._update_checkpoint(
+                        import_job_id, "groupsImported.completed", 1, increment=True
+                    )
+                    continue
 
                 # Create group
+                # Generate join code for imported group
+                join_code = self._generate_join_code()
+
                 new_group = {
                     "_id": ObjectId(),
                     "name": group_data["name"],
                     "currency": group_data["currency"],
                     "imageUrl": group_data["imageUrl"],
-                    "createdBy": ObjectId(user_id),
+                    "createdBy": user_id,  # Use string format for consistency
                     "members": mapped_members,
+                    "joinCode": join_code,
                     "splitwiseGroupId": group_data["splitwiseGroupId"],
                     "importedFrom": "splitwise",
                     "importedAt": datetime.now(timezone.utc),
@@ -399,76 +704,194 @@ class ImportService:
                 if not group_mapping:
                     continue  # Skip if group not found
 
-                # Map user IDs in splits
-                mapped_splits = []
-                for split in expense_data["splits"]:
-                    user_mapping = await self.id_mappings.find_one(
-                        {
-                            "importJobId": ObjectId(import_job_id),
-                            "entityType": "user",
-                            "splitwiseId": split["splitwiseUserId"],
-                        }
-                    )
-
-                    if user_mapping:
-                        mapped_splits.append(
-                            {
-                                "userId": user_mapping["splitwiserId"],
-                                "amount": split["amount"],
-                                "type": split["type"],
-                            }
-                        )
-
-                # Map paidBy user ID
-                paid_by_mapping = await self.id_mappings.find_one(
+                # Check if expense already exists in Splitwiser
+                existing_expense = await self.expenses.find_one(
                     {
-                        "importJobId": ObjectId(import_job_id),
-                        "entityType": "user",
-                        "splitwiseId": expense_data["paidBy"],
+                        "splitwiseExpenseId": expense_data["splitwiseExpenseId"],
+                        "groupId": group_mapping["splitwiserId"],
                     }
                 )
 
-                # Create expense
+                if existing_expense:
+                    # Store mapping for this job so dependent entities (if any) can be linked
+                    await self.id_mappings.insert_one(
+                        {
+                            "importJobId": ObjectId(import_job_id),
+                            "entityType": "expense",
+                            "splitwiseId": expense_data["splitwiseExpenseId"],
+                            "splitwiserId": str(existing_expense["_id"]),
+                            "createdAt": datetime.now(timezone.utc),
+                        }
+                    )
+
+                    # Update existing expense currency if needed
+                    await self.expenses.update_one(
+                        {"_id": existing_expense["_id"]},
+                        {
+                            "$set": {
+                                "currency": expense_data.get("currency", "USD"),
+                                "updatedAt": datetime.now(timezone.utc),
+                            }
+                        },
+                    )
+
+                    # We still increment summary to show progress
+                    await self._increment_summary(import_job_id, "expensesCreated")
+                    continue
+
+                # UNIFIED APPROACH: Use userShares to create settlements
+                # For EVERY expense (including payments), each user has:
+                #   netEffect = paidShare - owedShare
+                #   Positive = they are owed money (creditor)
+                #   Negative = they owe money (debtor)
+
+                user_shares = expense_data.get("userShares", [])
+
+                if not user_shares:
+                    # Fallback: skip if no user shares data
+                    logger.warning(
+                        f"Expense {expense_data['splitwiseExpenseId']} has no userShares, skipping"
+                    )
+                    await self._update_checkpoint(
+                        import_job_id, "expensesImported.completed", 1, increment=True
+                    )
+                    continue
+
+                # Map Splitwise user IDs to Splitwiser user IDs
+                mapped_shares = []
+                for share in user_shares:
+                    sw_user_id = share["userId"]
+                    mapping = await self.id_mappings.find_one(
+                        {
+                            "importJobId": ObjectId(import_job_id),
+                            "entityType": "user",
+                            "splitwiseId": sw_user_id,
+                        }
+                    )
+                    if mapping:
+                        mapped_shares.append(
+                            {
+                                "userId": mapping["splitwiserId"],
+                                "userName": share["userName"],
+                                "paidShare": share["paidShare"],
+                                "owedShare": share["owedShare"],
+                                "netEffect": share["netEffect"],
+                            }
+                        )
+
+                # Separate into creditors (positive netEffect) and debtors (negative netEffect)
+                creditors = [
+                    (s["userId"], s["userName"], s["netEffect"])
+                    for s in mapped_shares
+                    if s["netEffect"] > 0.01
+                ]
+                debtors = [
+                    (s["userId"], s["userName"], -s["netEffect"])
+                    for s in mapped_shares
+                    if s["netEffect"] < -0.01
+                ]
+
+                # Create expense record
+                payer_id = creditors[0][0] if creditors else user_id
                 new_expense = {
                     "_id": ObjectId(),
-                    "groupId": ObjectId(group_mapping["splitwiserId"]),
-                    "createdBy": ObjectId(user_id),
-                    "paidBy": (
-                        paid_by_mapping["splitwiserId"] if paid_by_mapping else user_id
-                    ),
+                    "groupId": group_mapping["splitwiserId"],
+                    "createdBy": user_id,
+                    "paidBy": payer_id,
                     "description": expense_data["description"],
                     "amount": expense_data["amount"],
-                    "splits": mapped_splits,
+                    "splits": [
+                        {
+                            "userId": s["userId"],
+                            "amount": s["owedShare"],
+                            "userName": s["userName"],
+                        }
+                        for s in mapped_shares
+                        if s["owedShare"] > 0
+                    ],
                     "splitType": expense_data["splitType"],
-                    "tags": expense_data["tags"],
+                    "tags": [
+                        t for t in (expense_data.get("tags") or []) if t is not None
+                    ],
                     "receiptUrls": (
-                        expense_data["receiptUrls"] if options.importReceipts else []
+                        [
+                            r
+                            for r in (expense_data.get("receiptUrls") or [])
+                            if r is not None
+                        ]
+                        if options.importReceipts
+                        else []
                     ),
                     "comments": [],
                     "history": [],
+                    "currency": expense_data.get("currency", "USD"),
                     "splitwiseExpenseId": expense_data["splitwiseExpenseId"],
+                    "isPayment": expense_data.get("isPayment", False),
                     "importedFrom": "splitwise",
                     "importedAt": datetime.now(timezone.utc),
+                    "updatedAt": datetime.now(timezone.utc),
                     "createdAt": (
-                        datetime.fromisoformat(expense_data["createdAt"])
-                        if expense_data.get("createdAt")
+                        datetime.fromisoformat(
+                            expense_data["date"].replace("Z", "+00:00")
+                        )
+                        if expense_data.get("date")
                         else datetime.now(timezone.utc)
                     ),
-                    "updatedAt": datetime.now(timezone.utc),
                 }
 
                 await self.expenses.insert_one(new_expense)
 
-                # Store mapping
-                await self.id_mappings.insert_one(
-                    {
-                        "importJobId": ObjectId(import_job_id),
-                        "entityType": "expense",
-                        "splitwiseId": expense_data["splitwiseExpenseId"],
-                        "splitwiserId": str(new_expense["_id"]),
-                        "createdAt": datetime.now(timezone.utc),
-                    }
-                )
+                # Create settlements: each debtor owes each creditor proportionally
+                # For simplicity, we match debtors to creditors in order (greedy approach)
+                creditor_idx = 0
+                remaining_credit = list(creditors)  # Make mutable copy
+
+                for debtor_id, debtor_name, debt_amount in debtors:
+                    remaining_debt = debt_amount
+
+                    while remaining_debt > 0.01 and creditor_idx < len(
+                        remaining_credit
+                    ):
+                        creditor_id, creditor_name, credit = remaining_credit[
+                            creditor_idx
+                        ]
+
+                        # Match the minimum of debt and credit
+                        settlement_amount = min(remaining_debt, credit)
+
+                        if settlement_amount > 0.01:
+                            settlement_doc = {
+                                "_id": ObjectId(),
+                                "expenseId": str(new_expense["_id"]),
+                                "groupId": group_mapping["splitwiserId"],
+                                # payerId = debtor (person who OWES), payeeId = creditor (person OWED)
+                                "payerId": debtor_id,
+                                "payeeId": creditor_id,
+                                "amount": round(settlement_amount, 2),
+                                "currency": expense_data.get("currency", "USD"),
+                                "payerName": debtor_name,
+                                "payeeName": creditor_name,
+                                "status": "pending",
+                                "description": f"Share for {expense_data['description']}",
+                                "createdAt": datetime.now(timezone.utc),
+                                "importedFrom": "splitwise",
+                                "importedAt": datetime.now(timezone.utc),
+                            }
+
+                            await self.db["settlements"].insert_one(settlement_doc)
+                            await self._increment_summary(
+                                import_job_id, "settlementsCreated"
+                            )
+
+                        remaining_debt -= settlement_amount
+                        remaining_credit[creditor_idx] = (
+                            creditor_id,
+                            creditor_name,
+                            credit - settlement_amount,
+                        )
+
+                        if remaining_credit[creditor_idx][2] < 0.01:
+                            creditor_idx += 1
 
                 await self._increment_summary(import_job_id, "expensesCreated")
                 await self._update_checkpoint(
@@ -481,31 +904,35 @@ class ImportService:
     async def _update_checkpoint(
         self, import_job_id: str, field: str, value, increment: bool = False
     ):
-        """Update import checkpoint."""
+        """Update checkpoint status."""
+        update = {}
         if increment:
-            await self.import_jobs.update_one(
-                {"_id": ObjectId(import_job_id)},
-                {"$inc": {f"checkpoints.{field}": value}},
-            )
+            update = {"$inc": {f"checkpoints.{field}": value}}
         else:
-            await self.import_jobs.update_one(
-                {"_id": ObjectId(import_job_id)},
-                {"$set": {f"checkpoints.{field}": value}},
-            )
+            update = {"$set": {f"checkpoints.{field}": value}}
 
-    async def _increment_summary(self, import_job_id: str, field: str):
+        await self.import_jobs.update_one({"_id": ObjectId(import_job_id)}, update)
+
+    async def _increment_summary(
+        self, import_job_id: str, field: str, increment_by: int = 1
+    ):
         """Increment summary counter."""
         await self.import_jobs.update_one(
-            {"_id": ObjectId(import_job_id)}, {"$inc": {f"summary.{field}": 1}}
+            {"_id": ObjectId(import_job_id)},
+            {"$inc": {f"summary.{field}": increment_by}},
         )
 
-    async def _record_error(self, import_job_id: str, stage: str, message: str):
-        """Record an import error."""
+    async def _record_error(
+        self, import_job_id: str, error_type: str, message: str, blocking: bool = False
+    ):
+        """Record an error that occurred during import."""
         error = {
-            "stage": stage,
+            "stage": error_type,  # Using 'stage' to match schema
             "message": message,
+            "blocking": blocking,
             "timestamp": datetime.now(timezone.utc),
         }
+
         await self.import_jobs.update_one(
             {"_id": ObjectId(import_job_id)}, {"$push": {"errors": error}}
         )

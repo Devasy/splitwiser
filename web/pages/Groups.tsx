@@ -7,11 +7,12 @@ import { EmptyState } from '../components/ui/EmptyState';
 import { Input } from '../components/ui/Input';
 import { Modal } from '../components/ui/Modal';
 import { Skeleton } from '../components/ui/Skeleton';
-import { THEMES } from '../constants';
+import { CURRENCIES, THEMES } from '../constants';
 import { useTheme } from '../contexts/ThemeContext';
 import { useToast } from '../contexts/ToastContext';
 import { createGroup, getBalanceSummary, getGroups, joinGroup } from '../services/api';
 import { BalanceSummary, Group, GroupBalanceSummary } from '../types';
+import { formatCurrency } from '../utils/formatters';
 
 export const Groups = () => {
   const [groups, setGroups] = useState<Group[]>([]);
@@ -20,6 +21,7 @@ export const Groups = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isJoinModalOpen, setIsJoinModalOpen] = useState(false);
   const [newGroupName, setNewGroupName] = useState('');
+  const [newGroupCurrency, setNewGroupCurrency] = useState('USD');
   const [joinCode, setJoinCode] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -55,8 +57,9 @@ export const Groups = () => {
   const handleCreateGroup = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await createGroup({ name: newGroupName });
+      await createGroup({ name: newGroupName, currency: newGroupCurrency });
       setNewGroupName('');
+      setNewGroupCurrency('USD');
       setIsCreateModalOpen(false);
       loadData();
       addToast('Group created successfully!', 'success');
@@ -78,7 +81,7 @@ export const Groups = () => {
     }
   };
 
-  const filteredGroups = useMemo(() => 
+  const filteredGroups = useMemo(() =>
     groups.filter(g => g.name.toLowerCase().includes(searchTerm.toLowerCase())),
     [groups, searchTerm]
   );
@@ -139,8 +142,8 @@ export const Groups = () => {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className={`pl-12 pr-4 py-3 outline-none transition-all w-full font-bold ${isNeo
-                    ? 'bg-white border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] focus:translate-x-[2px] focus:translate-y-[2px] focus:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] rounded-none placeholder:text-black/40'
-                    : 'bg-white/10 border border-white/20 focus:bg-white/20 focus:border-white/30 backdrop-blur-md rounded-xl text-white placeholder:text-white/40'
+                  ? 'bg-white border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] focus:translate-x-[2px] focus:translate-y-[2px] focus:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] rounded-none placeholder:text-black/40'
+                  : 'bg-white/10 border border-white/20 focus:bg-white/20 focus:border-white/30 backdrop-blur-md rounded-xl text-white placeholder:text-white/40'
                   }`}
               />
             </div>
@@ -187,11 +190,11 @@ export const Groups = () => {
                       </div>
                       {balanceAmount !== 0 && (
                         <div className={`px-4 py-2 text-xs font-black uppercase tracking-wider flex items-center gap-2 ${balanceAmount > 0
-                            ? (isNeo ? 'bg-emerald-200 text-black border-2 border-black rounded-none' : 'bg-emerald-500/20 text-emerald-500 border border-emerald-500/30 rounded-full')
-                            : (isNeo ? 'bg-red-200 text-black border-2 border-black rounded-none' : 'bg-red-500/20 text-red-500 border border-red-500/30 rounded-full')
+                          ? (isNeo ? 'bg-emerald-200 text-black border-2 border-black rounded-none' : 'bg-emerald-500/20 text-emerald-500 border border-emerald-500/30 rounded-full')
+                          : (isNeo ? 'bg-red-200 text-black border-2 border-black rounded-none' : 'bg-red-500/20 text-red-500 border border-red-500/30 rounded-full')
                           }`}>
                           {balanceAmount > 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
-                          {balanceAmount > 0 ? 'Owed' : 'Owe'} {group.currency} {Math.abs(balanceAmount).toFixed(2)}
+                          {balanceAmount > 0 ? 'Owed' : 'Owe'} {formatCurrency(Math.abs(balanceAmount), group.currency)}
                         </div>
                       )}
                     </div>
@@ -252,6 +255,25 @@ export const Groups = () => {
             required
             className={isNeo ? 'rounded-none' : ''}
           />
+          <div className="space-y-1.5">
+            <label className={`text-sm font-bold ${isNeo ? 'text-black uppercase' : (mode === 'dark' ? 'text-gray-300' : 'text-gray-700')}`}>
+              Currency
+            </label>
+            <select
+              value={newGroupCurrency}
+              onChange={(e) => setNewGroupCurrency(e.target.value)}
+              className={`w-full p-3 font-bold transition-all outline-none ${isNeo
+                ? 'bg-white border-2 border-black rounded-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] focus:translate-x-[2px] focus:translate-y-[2px] focus:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
+                : 'bg-white/10 dark:bg-white/5 border border-white/20 dark:border-white/10 rounded-xl focus:border-blue-500/50'
+                }`}
+            >
+              {Object.values(CURRENCIES).map((c) => (
+                <option key={c.code} value={c.code}>
+                  {c.code} ({c.symbol}) - {c.name}
+                </option>
+              ))}
+            </select>
+          </div>
         </form>
       </Modal>
 

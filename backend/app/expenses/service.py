@@ -54,8 +54,22 @@ class ExpenseService:
             raise HTTPException(status_code=500, detail="Failed to process group ID")
 
         # Verify user is member of the group
+        # Query for both string and ObjectId userId formats for compatibility with imported groups
+        try:
+            user_obj_id = ObjectId(user_id)
+        except:
+            user_obj_id = user_id
+
         group = await self.groups_collection.find_one(
-            {"_id": group_obj_id, "members.userId": user_id}
+            {
+                "_id": group_obj_id,
+                "$or": [
+                    {"members.userId": user_obj_id},
+                    {"members.userId": user_id},
+                    {"createdBy": user_obj_id},
+                    {"createdBy": user_id},
+                ],
+            }
         )
         if not group:  # User not a member of the group
             raise HTTPException(
@@ -81,6 +95,7 @@ class ExpenseService:
             "paidBy": expense_data.paidBy,
             "description": expense_data.description,
             "amount": expense_data.amount,
+            "currency": expense_data.currency or group.get("currency", "USD"),
             "splits": [split.model_dump() for split in expense_data.splits],
             "splitType": expense_data.splitType,
             "tags": expense_data.tags or [],
@@ -130,16 +145,24 @@ class ExpenseService:
         user_names = {str(user["_id"]): user.get("name", "Unknown") for user in users}
 
         for split in expense_doc["splits"]:
+            # Skip if split user is the payer (they don't owe themselves)
+            if split["userId"] == payer_id:
+                continue
+
             settlement_doc = {
                 "_id": ObjectId(),
                 "expenseId": expense_id,
                 "groupId": group_id,
-                "payerId": payer_id,
-                "payeeId": split["userId"],
-                "payerName": user_names.get(payer_id, "Unknown"),
-                "payeeName": user_names.get(split["userId"], "Unknown"),
+                # IMPORTANT: payerId = debtor (person who OWES/will pay)
+                #            payeeId = creditor (person who is OWED/paid the expense)
+                # This matches: net_balances[payerId][payeeId] means payerId owes payeeId
+                "payerId": split["userId"],  # The debtor (person who owes)
+                "payeeId": payer_id,  # The creditor (person who paid)
                 "amount": split["amount"],
-                "status": "completed" if split["userId"] == payer_id else "pending",
+                "currency": expense_doc.get("currency", "USD"),
+                "payerName": user_names.get(split["userId"], "Unknown"),  # Debtor name
+                "payeeName": user_names.get(payer_id, "Unknown"),  # Creditor name
+                "status": "pending",
                 "description": f"Share for {expense_doc['description']}",
                 "createdAt": datetime.utcnow(),
             }
@@ -166,9 +189,22 @@ class ExpenseService:
     ) -> Dict[str, Any]:
         """List expenses for a group with pagination and filtering"""
 
-        # Verify user access
+        # Verify user access - handle both string and ObjectId userId formats
+        try:
+            user_obj_id = ObjectId(user_id)
+        except:
+            user_obj_id = user_id
+
         group = await self.groups_collection.find_one(
-            {"_id": ObjectId(group_id), "members.userId": user_id}
+            {
+                "_id": ObjectId(group_id),
+                "$or": [
+                    {"members.userId": user_obj_id},
+                    {"members.userId": user_id},
+                    {"createdBy": user_obj_id},
+                    {"createdBy": user_id},
+                ],
+            }
         )
         if not group:
             raise ValueError("Group not found or user not a member")
@@ -260,9 +296,22 @@ class ExpenseService:
             logger.error(f"Unexpected error parsing IDs: {e}")
             raise HTTPException(status_code=500, detail="Unable to process IDs")
 
-        # Verify user access
+        # Verify user access - handle both string and ObjectId userId formats
+        try:
+            user_obj_id = ObjectId(user_id)
+        except:
+            user_obj_id = user_id
+
         group = await self.groups_collection.find_one(
-            {"_id": group_obj_id, "members.userId": user_id}
+            {
+                "_id": group_obj_id,
+                "$or": [
+                    {"members.userId": user_obj_id},
+                    {"members.userId": user_id},
+                    {"createdBy": user_obj_id},
+                    {"createdBy": user_id},
+                ],
+            }
         )
         if not group:  # Unauthorized access
             raise HTTPException(
@@ -492,9 +541,10 @@ class ExpenseService:
     ) -> List[OptimizedSettlement]:
         """Normal splitting algorithm - simplifies only direct relationships"""
 
-        # Get all pending settlements for the group
+        # Get all settlements for the group regardless of status
+        # We calculate net balances from ALL transactions to get true outstanding amounts
         settlements = await self.settlements_collection.find(
-            {"groupId": group_id, "status": "pending"}
+            {"groupId": group_id}
         ).to_list(None)
 
         # Calculate net balances between each pair of users
@@ -549,9 +599,10 @@ class ExpenseService:
     ) -> List[OptimizedSettlement]:
         """Advanced settlement algorithm using graph optimization"""
 
-        # Get all pending settlements for the group
+        # Get all settlements for the group regardless of status
+        # We calculate net balances from ALL transactions to get true outstanding amounts
         settlements = await self.settlements_collection.find(
-            {"groupId": group_id, "status": "pending"}
+            {"groupId": group_id}
         ).to_list(None)
 
         # Calculate net balance for each user (what they owe - what they are owed)
@@ -566,9 +617,12 @@ class ExpenseService:
             user_names[payer] = settlement["payerName"]
             user_names[payee] = settlement["payeeName"]
 
-            # Payer paid for payee, so payee owes payer
-            user_balances[payee] += amount  # Positive means owes money
-            user_balances[payer] -= amount  # Negative means is owed money
+            # In our settlement model:
+            # payerId = debtor (person who OWES money)
+            # payeeId = creditor (person who is OWED money)
+            # So: payer owes payee the amount
+            user_balances[payer] += amount  # Payer owes money (positive = debtor)
+            user_balances[payee] -= amount  # Payee is owed money (negative = creditor)
 
         # Separate debtors (positive balance) and creditors (negative balance)
         debtors = []  # (user_id, amount_owed)
@@ -626,9 +680,22 @@ class ExpenseService:
     ) -> Settlement:
         """Create a manual settlement record"""
 
-        # Verify user access
+        # Verify user access - handle both string and ObjectId userId formats
+        try:
+            user_obj_id = ObjectId(user_id)
+        except:
+            user_obj_id = user_id
+
         group = await self.groups_collection.find_one(
-            {"_id": ObjectId(group_id), "members.userId": user_id}
+            {
+                "_id": ObjectId(group_id),
+                "$or": [
+                    {"members.userId": user_obj_id},
+                    {"members.userId": user_id},
+                    {"createdBy": user_obj_id},
+                    {"createdBy": user_id},
+                ],
+            }
         )
         if not group:
             logger.warning(
@@ -660,6 +727,7 @@ class ExpenseService:
             "payerName": user_names.get(settlement_data.payer_id, "Unknown"),
             "payeeName": user_names.get(settlement_data.payee_id, "Unknown"),
             "amount": settlement_data.amount,
+            "currency": group.get("currency", "USD"),
             "status": "completed",
             "description": settlement_data.description or "Manual settlement",
             "paidAt": settlement_data.paidAt or datetime.utcnow(),
@@ -720,9 +788,22 @@ class ExpenseService:
     ) -> Dict[str, Any]:
         """Get settlements for a group with pagination"""
 
-        # Verify user access
+        # Verify user access - handle both string and ObjectId userId formats
+        try:
+            user_obj_id = ObjectId(user_id)
+        except:
+            user_obj_id = user_id
+
         group = await self.groups_collection.find_one(
-            {"_id": ObjectId(group_id), "members.userId": user_id}
+            {
+                "_id": ObjectId(group_id),
+                "$or": [
+                    {"members.userId": user_obj_id},
+                    {"members.userId": user_id},
+                    {"createdBy": user_obj_id},
+                    {"createdBy": user_id},
+                ],
+            }
         )
         if not group:
             logger.warning(
@@ -767,13 +848,21 @@ class ExpenseService:
     ) -> Settlement:
         """Get a single settlement by ID"""
 
-        # Verify user access
+        # Verify user access - handle both string and ObjectId userId formats
+        try:
+            user_obj_id = ObjectId(user_id)
+        except:
+            user_obj_id = user_id
+
         group = await self.groups_collection.find_one(
             {
-                "_id": ObjectId(
-                    group_id
-                ),  # Assuming valid object ID format (same as above functions)
-                "members.userId": user_id,
+                "_id": ObjectId(group_id),
+                "$or": [
+                    {"members.userId": user_obj_id},
+                    {"members.userId": user_id},
+                    {"createdBy": user_obj_id},
+                    {"createdBy": user_id},
+                ],
             }
         )
         if not group:
@@ -964,9 +1053,24 @@ class ExpenseService:
         """
 
         # First, get all groups user belongs to (need this to filter friends properly)
-        groups = await self.groups_collection.find({"members.userId": user_id}).to_list(
-            length=500
-        )
+        # Query both members.userId (string) and ObjectId format for backward compatibility
+        try:
+            user_object_id = ObjectId(user_id)
+        except:
+            user_object_id = None
+
+        groups = await self.groups_collection.find(
+            {
+                "$or": [
+                    {"members.userId": user_id},
+                    (
+                        {"members.userId": user_object_id}
+                        if user_object_id
+                        else {"_id": {"$exists": False}}
+                    ),
+                ]
+            }
+        ).to_list(length=500)
 
         if not groups:
             return {

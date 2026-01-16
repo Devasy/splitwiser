@@ -170,23 +170,43 @@ class SplitwiseClient:
     @staticmethod
     def transform_expense(expense) -> Dict[str, Any]:
         """Transform Splitwise expense to Splitwiser format."""
-        # Determine who paid
-        paid_by_user_id = None
+        # Collect all user shares (paidShare and owedShare for each user)
+        # This is the key data for calculating net balances correctly
+        user_shares = []
+        payers = []
         users = expense.getUsers() if hasattr(expense, "getUsers") else []
         for user in users or []:
             try:
-                if float(user.getPaidShare()) > 0:
-                    paid_by_user_id = str(user.getId())
-                    break
+                paid_share = float(user.getPaidShare() or 0)
+                owed_share = float(user.getOwedShare() or 0)
+                uid = str(user.getId())
+                name = f"{user.getFirstName() or ''} {user.getLastName() or ''}".strip()
+
+                user_shares.append(
+                    {
+                        "userId": uid,
+                        "userName": name,
+                        "paidShare": paid_share,
+                        "owedShare": owed_share,
+                        "netEffect": paid_share
+                        - owed_share,  # Positive = owed, negative = owes
+                    }
+                )
+
+                if paid_share > 0:
+                    payers.append({"id": uid, "amount": paid_share, "name": name})
             except Exception:
                 continue
 
-        # Transform splits
+        # Transform splits (for backward compatibility)
         splits = []
         for user in users or []:
             try:
                 owed_amount = (
                     float(user.getOwedShare()) if hasattr(user, "getOwedShare") else 0
+                )
+                paid_amount = (
+                    float(user.getPaidShare()) if hasattr(user, "getPaidShare") else 0
                 )
                 if owed_amount > 0:
                     splits.append(
@@ -195,6 +215,7 @@ class SplitwiseClient:
                             "splitwiseUserId": str(user.getId()),
                             "userName": f"{user.getFirstName() or ''} {user.getLastName() or ''}".strip(),
                             "amount": owed_amount,
+                            "paidShare": paid_amount,  # Include for net calculation
                             "type": "equal",
                         }
                     )
@@ -217,7 +238,9 @@ class SplitwiseClient:
             try:
                 receipt = expense.getReceipt()
                 if receipt and hasattr(receipt, "getOriginal"):
-                    receipt_urls.append(receipt.getOriginal())
+                    original = receipt.getOriginal()
+                    if original:
+                        receipt_urls.append(original)
             except Exception:
                 pass
 
@@ -248,6 +271,14 @@ class SplitwiseClient:
             expense.getUpdatedAt() if hasattr(expense, "getUpdatedAt") else None
         )
 
+        # Check if this is a payment transaction (person-to-person settlement)
+        is_payment = False
+        if hasattr(expense, "getPayment"):
+            try:
+                is_payment = expense.getPayment() is True
+            except:
+                pass
+
         return {
             "splitwiseExpenseId": str(expense.getId()),
             "groupId": group_id,
@@ -261,14 +292,19 @@ class SplitwiseClient:
                 else "USD"
             ),
             "date": SplitwiseClient._safe_isoformat(expense_date),
-            "paidBy": paid_by_user_id,
+            "payers": payers,  # List of {id, amount, name}
+            "paidBy": (
+                payers[0]["id"] if payers else None
+            ),  # Backwards compatibility for single payer
             "createdBy": created_by_id,
             "splits": splits,
+            "userShares": user_shares,  # Full paidShare/owedShare/netEffect for each user
             "splitType": "equal",
             "tags": tags,
             "receiptUrls": receipt_urls,
             "isDeleted": deleted_at is not None,
             "deletedAt": SplitwiseClient._safe_isoformat(deleted_at),
+            "isPayment": is_payment,  # True if this is a person-to-person payment
             "importedFrom": "splitwise",
             "importedAt": datetime.now(timezone.utc).isoformat(),
             "createdAt": SplitwiseClient._safe_isoformat(created_at),

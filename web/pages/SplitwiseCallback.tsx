@@ -1,79 +1,140 @@
-import { useEffect, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useToast } from '../contexts/ToastContext';
 import { getImportStatus, handleSplitwiseCallback } from '../services/api';
 
 export const SplitwiseCallback = () => {
-  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { showToast } = useToast();
+  const location = useLocation();
+  const { addToast } = useToast();
   const [status, setStatus] = useState('Processing authorization...');
   const [progress, setProgress] = useState(0);
   const [importing, setImporting] = useState(true);
+  const hasStartedRef = useRef(false);
 
   useEffect(() => {
+    // Check if we're in progress tracking mode (skipOAuth from group selection)
+    const state = location.state as { jobId?: string; skipOAuth?: boolean };
+    if (state?.skipOAuth && state?.jobId) {
+      // Start polling for existing job
+      startProgressPolling(state.jobId);
+      return;
+    }
+
+    // Prevent duplicate execution in React Strict Mode using ref
+    if (hasStartedRef.current) {
+      console.log('Callback already started, skipping duplicate execution');
+      return;
+    }
+    hasStartedRef.current = true;
+
     const handleCallback = async () => {
-      const code = searchParams.get('code');
-      const state = searchParams.get('state');
+      // Parse query parameters from the full URL (before the hash)
+      const urlParams = new URLSearchParams(window.location.search);
+      const code = urlParams.get('code');
+      const state = urlParams.get('state');
+
+      console.log('OAuth callback - code:', code?.substring(0, 10), 'state:', state);
 
       if (!code) {
-        showToast('Authorization failed - no code received', 'error');
+        console.error('No code received');
+        addToast('Authorization failed - no code received', 'error');
         navigate('/import/splitwise');
         return;
       }
 
       try {
-        // Send code to backend to exchange for access token and start import
-        const response = await handleSplitwiseCallback(code, state || '');
-        const jobId = response.data.import_job_id || response.data.importJobId;
+        setStatus('Fetching your Splitwise data...');
+        
+        // First, exchange OAuth code for access token and get preview
+        console.log('Exchanging OAuth code for token...');
+        const tokenResponse = await handleSplitwiseCallback(code, state || '');
+        console.log('Token exchange response:', tokenResponse.data);
+        
+        // Check if we got groups in the response (from preview)
+        if (tokenResponse.data.groups && tokenResponse.data.groups.length > 0) {
+          // Navigate to group selection
+          console.log('Navigating to group selection with', tokenResponse.data.groups.length, 'groups');
+          navigate('/import/splitwise/select-groups', {
+            state: {
+              accessToken: tokenResponse.data.accessToken,
+              groups: tokenResponse.data.groups
+            }
+          });
+          return;
+        }
+        
+        // If no groups or preview data, start import directly (backward compatibility)
+        const jobId = tokenResponse.data.import_job_id || tokenResponse.data.importJobId;
 
         if (!jobId) {
+          console.error('No job ID in response:', tokenResponse.data);
           throw new Error('No import job ID received');
         }
 
-        showToast('Authorization successful! Starting import...', 'success');
-        setStatus('Import started...');
-
-        // Poll for progress
-        const pollInterval = setInterval(async () => {
-          try {
-            const statusResponse = await getImportStatus(jobId);
-            const statusData = statusResponse.data;
-
-            setProgress(statusData.progress_percentage || 0);
-            setStatus(statusData.current_stage || 'Processing...');
-
-            if (statusData.status === 'completed') {
-              clearInterval(pollInterval);
-              setImporting(false);
-              showToast('Import completed successfully!', 'success');
-              setStatus('Completed! Redirecting to dashboard...');
-              setTimeout(() => navigate('/dashboard'), 2000);
-            } else if (statusData.status === 'failed') {
-              clearInterval(pollInterval);
-              setImporting(false);
-              showToast('Import failed', 'error');
-              setStatus(`Failed: ${statusData.error_details || 'Unknown error'}`);
-            }
-          } catch (error) {
-            console.error('Error polling import status:', error);
-          }
-        }, 2000);
-
-        return () => clearInterval(pollInterval);
+        console.log('Import job ID:', jobId);
+        addToast('Authorization successful! Starting import...', 'success');
+        
+        startProgressPolling(jobId);
+        
       } catch (error: any) {
         console.error('Callback error:', error);
-        showToast(
-          error.response?.data?.detail || 'Failed to process authorization',
-          'error'
-        );
+        if (showToast) {
+          showToast(
+            error.response?.data?.detail || 'Failed to process authorization',
+            'error'
+          );
+        }
         setImporting(false);
         setTimeout(() => navigate('/import/splitwise'), 2000);
       }
     };
 
     handleCallback();
-  }, [searchParams, navigate, showToast]);
+  }, [navigate, addToast, location.state]);
+
+  const startProgressPolling = (jobId: string) => {
+    setStatus('Import started...');
+    
+    // Poll for progress
+    const pollInterval = setInterval(async () => {
+      try {
+        const statusResponse = await getImportStatus(jobId);
+        const statusData = statusResponse.data;
+        
+        console.log('Status response:', statusData);
+        
+        // Log errors if any
+        if (statusData.errors && statusData.errors.length > 0) {
+          console.warn('Import errors:', statusData.errors);
+        }
+
+        // Backend returns nested progress object with camelCase
+        const progressPercentage = statusData.progress?.percentage || 0;
+        const currentStage = statusData.progress?.currentStage || 'Processing...';
+        
+        console.log('Progress:', progressPercentage, '% -', currentStage, '- Status:', statusData.status);
+        
+        setProgress(progressPercentage);
+        setStatus(currentStage);
+
+        if (statusData.status === 'completed') {
+          clearInterval(pollInterval);
+          setImporting(false);
+          addToast('Import completed successfully!', 'success');
+          setStatus('Completed! Redirecting to dashboard...');
+          setTimeout(() => navigate('/dashboard'), 2000);
+        } else if (statusData.status === 'failed') {
+          clearInterval(pollInterval);
+          setImporting(false);
+          addToast('Import failed', 'error');
+          setStatus(`Failed: ${statusData.errors?.[0]?.message || 'Unknown error'}`);
+        }
+      } catch (error) {
+        console.error('Error polling import status:', error);
+      }
+    }, 2000);
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center px-4">

@@ -6,7 +6,10 @@ from app.auth.security import get_current_user
 from app.config import settings
 from app.database import get_database
 from app.integrations.schemas import (
+    ImportOptions,
     ImportPreviewResponse,
+    ImportProvider,
+    ImportStatus,
     ImportStatusResponse,
     OAuthCallbackRequest,
     RollbackImportResponse,
@@ -42,9 +45,9 @@ async def get_splitwise_oauth_url(current_user=Depends(get_current_user)):
     )
 
     # Get OAuth authorization URL
-    # User will be redirected back to: {FRONTEND_URL}/import/splitwise/callback
+    # User will be redirected back to: {FRONTEND_URL}/#/import/splitwise/callback
     auth_url, secret = sObj.getOAuth2AuthorizeURL(
-        redirect_uri=f"{settings.frontend_url}/import/splitwise/callback"
+        redirect_uri=f"{settings.frontend_url}/#/import/splitwise/callback"
     )
 
     # Store the secret temporarily (you may want to use Redis/cache instead)
@@ -57,13 +60,17 @@ async def get_splitwise_oauth_url(current_user=Depends(get_current_user)):
 
 @router.post("/splitwise/callback")
 async def splitwise_oauth_callback(
-    request: OAuthCallbackRequest, current_user=Depends(get_current_user)
+    request: OAuthCallbackRequest,
+    current_user=Depends(get_current_user),
+    db: AsyncIOMotorDatabase = Depends(get_database),
 ):
     """
     Handle OAuth 2.0 callback from Splitwise.
 
     After user authorizes, Splitwise redirects to frontend with code.
-    Frontend sends code here to exchange for access token and start import.
+    Frontend sends code here to exchange for access token.
+    If options with selectedGroupIds is provided, start import with those groups.
+    Otherwise, return preview data for group selection.
     """
     if not all([settings.splitwise_consumer_key, settings.splitwise_consumer_secret]):
         raise HTTPException(status_code=500, detail="Splitwise OAuth not configured")
@@ -75,27 +82,75 @@ async def splitwise_oauth_callback(
     )
 
     try:
-        # Exchange authorization code for access token
-        access_token = sObj.getOAuth2AccessToken(
-            code=request.code,
-            redirect_uri=f"{settings.frontend_url}/import/splitwise/callback",
+        # Determine if we need to exchange code or use provided token
+        if request.accessToken:
+            # Using stored access token from previous exchange
+            print("Using stored access token")
+            access_token_str = request.accessToken
+        elif request.code:
+            # Exchange authorization code for access token
+            print(f"Attempting OAuth token exchange with code: {request.code[:10]}...")
+            print(f"Redirect URI: {settings.frontend_url}/#/import/splitwise/callback")
+
+            access_token = sObj.getOAuth2AccessToken(
+                code=request.code,
+                redirect_uri=f"{settings.frontend_url}/#/import/splitwise/callback",
+            )
+
+            print(f"Got access token: {access_token}")
+            access_token_str = access_token["access_token"]
+        else:
+            raise HTTPException(
+                status_code=400, detail="Either code or accessToken must be provided"
+            )
+
+        # Check if this is a preview request (no options) or import request (with selected groups)
+        if request.options is None or not request.options.selectedGroupIds:
+            # Return preview data for group selection
+            # Include the access token in the response so frontend can use it later
+            service = ImportService(db)
+            preview = await service.preview_splitwise_import(
+                user_id=current_user["_id"],
+                api_key=access_token_str,
+                consumer_key=settings.splitwise_consumer_key,
+                consumer_secret=settings.splitwise_consumer_secret,
+            )
+
+            # Add access token to preview response
+            preview["accessToken"] = access_token_str
+
+            return preview
+
+        # Start import with selected groups
+        service = ImportService(db)
+
+        # Use provided options or create default
+        options = request.options or ImportOptions(
+            importReceipts=True,
+            importComments=True,
+            importArchivedExpenses=False,
+            confirmWarnings=False,
         )
 
-        # Start import with the access token
-        service = ImportService()
         import_job_id = await service.start_import(
             user_id=current_user["_id"],
-            provider="splitwise",
-            api_key=access_token["access_token"],  # Use access token
+            provider=ImportProvider.SPLITWISE,
+            api_key=access_token_str,  # Use access token
+            consumer_key=settings.splitwise_consumer_key,
+            consumer_secret=settings.splitwise_consumer_secret,
+            options=options,
         )
 
         return StartImportResponse(
             importJobId=str(import_job_id),
-            status="started",
-            message="Import started successfully with OAuth",
+            status=ImportStatus.PENDING,
         )
 
     except Exception as e:
+        import traceback
+
+        print(f"OAuth callback error: {str(e)}")
+        print(f"Traceback: {traceback.format_exc()}")
         raise HTTPException(
             status_code=400, detail=f"Failed to exchange OAuth code: {str(e)}"
         )
@@ -209,6 +264,13 @@ async def get_import_status(
     elif job["status"] == "completed":
         current_stage = "Completed!"
 
+    # Sanitize errors to match schema
+    sanitized_errors = []
+    for error in job.get("errors", []):
+        if "stage" not in error and "type" in error:
+            error["stage"] = error["type"]
+        sanitized_errors.append(error)
+
     return ImportStatusResponse(
         importJobId=import_job_id,
         status=job["status"],
@@ -236,7 +298,7 @@ async def get_import_status(
                 ),
             },
         },
-        errors=job.get("errors", []),
+        errors=sanitized_errors,
         startedAt=job.get("startedAt"),
         completedAt=job.get("completedAt"),
         estimatedCompletion=None,

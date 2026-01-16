@@ -171,9 +171,26 @@ class GroupService:
         return self.transform_group_document(created_group)
 
     async def get_user_groups(self, user_id: str) -> List[dict]:
-        """Get all groups where user is a member"""
+        """Get all groups where user is a member or creator"""
         db = self.get_db()
-        cursor = db.groups.find({"members.userId": user_id})
+        # Convert user_id to ObjectId for querying
+        try:
+            user_obj_id = ObjectId(user_id)
+        except:
+            user_obj_id = user_id
+
+        # Query for both ObjectId and string formats for compatibility
+        # Also check createdBy field to show groups user created
+        cursor = db.groups.find(
+            {
+                "$or": [
+                    {"members.userId": user_obj_id},
+                    {"members.userId": user_id},
+                    {"createdBy": user_obj_id},
+                    {"createdBy": user_id},
+                ]
+            }
+        )
         groups = []
         async for group in cursor:
             transformed = self.transform_group_document(group)
@@ -193,7 +210,25 @@ class GroupService:
             logger.error(f"Unexpected error converting group_id to ObjectId: {e}")
             return None
 
-        group = await db.groups.find_one({"_id": obj_id, "members.userId": user_id})
+        # Convert user_id to ObjectId for querying both formats
+        try:
+            user_obj_id = ObjectId(user_id)
+        except:
+            user_obj_id = user_id
+
+        # Query for both ObjectId and string formats for compatibility with imported groups
+        # Also check createdBy field for groups where user is the creator
+        group = await db.groups.find_one(
+            {
+                "_id": obj_id,
+                "$or": [
+                    {"members.userId": user_obj_id},
+                    {"members.userId": user_id},
+                    {"createdBy": user_obj_id},
+                    {"createdBy": user_id},
+                ],
+            }
+        )
 
         if not group:
             return None
@@ -265,8 +300,37 @@ class GroupService:
                 status_code=403, detail="Only group admins can delete groups"
             )
 
+        # Result is True if delete was successful
+        # Cascade delete related entries if delete was successful
+        # 1. Delete all expenses related to this group
+        # 2. Delete all settlements related to this group
+        # 3. Delete related ID mappings only if it was an imported group
+
+        # Check if imported
+        is_imported = group.get("importedFrom") == "splitwise"
+
+        # Delete expenses
+        # Note: groupId in expenses is stored as string
+        await db.expenses.delete_many({"groupId": group_id})
+
+        # Delete settlements
+        await db.settlements.delete_many({"groupId": group_id})
+
+        # Delete the group itself
         result = await db.groups.delete_one({"_id": obj_id})
-        return result.deleted_count == 1
+
+        if result.deleted_count == 1:
+            if is_imported:
+                # Remove ID mapping for this group
+                # We do NOT remove the user mappings because users might be in other groups
+                # We do NOT remove import jobs because history is useful
+                await db.splitwise_id_mappings.delete_one(
+                    {"entityType": "group", "splitwiserId": group_id}
+                )
+
+            return True
+
+        return False
 
     async def join_group_by_code(self, join_code: str, user_id: str) -> Optional[dict]:
         """Join a group using join code"""
