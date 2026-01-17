@@ -619,6 +619,30 @@ _Document errors and their solutions here as you encounter them._
 
 ---
 
+### ✅ Successful PR Pattern: Error Boundary Implementation
+
+**Date:** 2026-01-14
+**Context:** Adding robust error handling to Web App
+
+**What was implemented:**
+1. Created `ErrorBoundary` Class Component (required for `getDerivedStateFromError`).
+2. Created `ErrorFallback` Functional Component (to use `useTheme` hook).
+3. Wrapped `AppRoutes` in `App.tsx` (inside `ThemeProvider`).
+4. Provided "Try Again" (reload) and "Back to Home" (href redirect) options.
+
+**Why it succeeded:**
+- ✅ Separation of concerns: Class for logic, Function for UI/Hooks.
+- ✅ Full dual-theme support (Neo/Glass) in fallback UI.
+- ✅ Safety: `window.location.reload()` clears bad state reliably.
+- ✅ Integration: Placed correctly within Provider hierarchy.
+
+**Key learnings:**
+- React Error Boundaries *must* be class components.
+- Use a child functional component if you need Hooks (like `useTheme`) in the error UI.
+- `window.location.href = '/'` is safer than `navigate('/')` for "Back to Home" when the app is in an undefined state.
+
+---
+
 ## Dependencies Reference
 
 ### Web
