@@ -28,7 +28,6 @@ export const SplitwiseCallback = () => {
 
     // Prevent duplicate execution in React Strict Mode using ref
     if (hasStartedRef.current) {
-      console.log('Callback already started, skipping duplicate execution');
       return;
     }
     hasStartedRef.current = true;
@@ -39,10 +38,7 @@ export const SplitwiseCallback = () => {
       const code = urlParams.get('code');
       const state = urlParams.get('state');
 
-      console.log('OAuth callback - code:', code?.substring(0, 10), 'state:', state);
-
       if (!code) {
-        console.error('No code received');
         addToast('Authorization failed - no code received', 'error');
         navigate('/import/splitwise');
         return;
@@ -52,14 +48,11 @@ export const SplitwiseCallback = () => {
         setStatus('Fetching your Splitwise data...');
 
         // First, exchange OAuth code for access token and get preview
-        console.log('Exchanging OAuth code for token...');
         const tokenResponse = await handleSplitwiseCallback(code, state || '');
-        console.log('Token exchange response:', tokenResponse.data);
 
         // Check if we got groups in the response (from preview)
         if (tokenResponse.data.groups && tokenResponse.data.groups.length > 0) {
           // Navigate to group selection
-          console.log('Navigating to group selection with', tokenResponse.data.groups.length, 'groups');
           navigate('/import/splitwise/select-groups', {
             state: {
               accessToken: tokenResponse.data.accessToken,
@@ -73,17 +66,13 @@ export const SplitwiseCallback = () => {
         const jobId = tokenResponse.data.import_job_id || tokenResponse.data.importJobId;
 
         if (!jobId) {
-          console.error('No job ID in response:', tokenResponse.data);
           throw new Error('No import job ID received');
         }
-
-        console.log('Import job ID:', jobId);
         addToast('Authorization successful! Starting import...', 'success');
 
         startProgressPolling(jobId);
 
       } catch (error: any) {
-        console.error('Callback error:', error);
         addToast(
           error.response?.data?.detail || 'Failed to process authorization',
           'error'
@@ -105,18 +94,13 @@ export const SplitwiseCallback = () => {
         const statusResponse = await getImportStatus(jobId);
         const statusData = statusResponse.data;
 
-        console.log('Status response:', statusData);
-
-        // Log errors if any
-        if (statusData.errors && statusData.errors.length > 0) {
+        // Log errors if any (keep for debugging in dev only)
+        if (process.env.NODE_ENV === 'development' && statusData.errors && statusData.errors.length > 0) {
           console.warn('Import errors:', statusData.errors);
         }
 
-        // Backend returns nested progress object with camelCase
         const progressPercentage = statusData.progress?.percentage || 0;
         const currentStage = statusData.progress?.currentStage || 'Processing...';
-
-        console.log('Progress:', progressPercentage, '% -', currentStage, '- Status:', statusData.status);
 
         setProgress(progressPercentage);
         setStatus(currentStage);
@@ -134,7 +118,7 @@ export const SplitwiseCallback = () => {
           setStatus(`Failed: ${statusData.errors?.[0]?.message || 'Unknown error'}`);
         }
       } catch (error) {
-        console.error('Error polling import status:', error);
+        // Silently catch polling errors to avoid spamming console
       }
     }, 2000);
   };

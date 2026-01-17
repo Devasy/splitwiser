@@ -71,14 +71,11 @@ async def fix_member_userid_format():
                     joined_at = group.get("createdAt", datetime.now(timezone.utc))
                     needs_update = True
 
-                updated_members.append(
-                    {
-                        "userId": user_id,
-                        "name": member.get("name"),
-                        "email": member.get("email"),
-                        "joinedAt": joined_at,
-                    }
-                )
+                # Preserve all existing member fields, only override normalized ones
+                updated_member = dict(member)  # Shallow copy to preserve all fields
+                updated_member["userId"] = user_id
+                updated_member["joinedAt"] = joined_at
+                updated_members.append(updated_member)
 
             # Update if needed
             if needs_update:

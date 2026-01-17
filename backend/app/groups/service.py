@@ -176,7 +176,7 @@ class GroupService:
         # Convert user_id to ObjectId for querying
         try:
             user_obj_id = ObjectId(user_id)
-        except:
+        except errors.InvalidId:
             user_obj_id = user_id
 
         # Query for both ObjectId and string formats for compatibility
@@ -213,7 +213,7 @@ class GroupService:
         # Convert user_id to ObjectId for querying both formats
         try:
             user_obj_id = ObjectId(user_id)
-        except:
+        except errors.InvalidId:
             user_obj_id = user_id
 
         # Query for both ObjectId and string formats for compatibility with imported groups

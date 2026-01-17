@@ -4,9 +4,9 @@ Pydantic schemas for import operations.
 
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 class ImportProvider(str, Enum):
@@ -48,7 +48,7 @@ class ImportError(BaseModel):
 
     stage: str
     message: str
-    details: Optional[Dict[str, Any]] = None
+    details: Optional[dict[str, Any]] = None
     timestamp: datetime
 
 
@@ -58,9 +58,7 @@ class ImportOptions(BaseModel):
     importReceipts: bool = True
     importComments: bool = True
     importArchivedExpenses: bool = False
-    confirmWarnings: bool = False
-    acknowledgeWarnings: bool = False  # Set to True to proceed past blocking warnings
-    selectedGroupIds: List[str] = []  # Splitwise group IDs to import
+    selectedGroupIds: list[str] = []  # Splitwise group IDs to import
 
 
 class ImportPreviewRequest(BaseModel):
@@ -93,10 +91,10 @@ class ImportPreviewWarning(BaseModel):
 class ImportPreviewResponse(BaseModel):
     """Response with import preview information."""
 
-    splitwiseUser: Optional[Dict[str, Any]] = None
-    groups: List[ImportPreviewGroup] = []
-    summary: Dict[str, Any]
-    warnings: List[ImportPreviewWarning] = []
+    splitwiseUser: Optional[dict[str, Any]] = None
+    groups: list[ImportPreviewGroup] = []
+    summary: dict[str, Any]
+    warnings: list[ImportPreviewWarning] = []
     estimatedDuration: str
 
 
@@ -130,8 +128,8 @@ class ImportStatusResponse(BaseModel):
 
     importJobId: str
     status: ImportStatus
-    progress: Optional[Dict[str, Any]] = None
-    errors: List[ImportError] = []
+    progress: Optional[dict[str, Any]] = None
+    errors: list[ImportError] = []
     startedAt: Optional[datetime] = None
     completedAt: Optional[datetime] = None
     estimatedCompletion: Optional[datetime] = None
@@ -163,7 +161,7 @@ class ImportJobResponse(BaseModel):
 class ImportHistoryResponse(BaseModel):
     """List of import jobs."""
 
-    imports: List[ImportJobResponse]
+    imports: list[ImportJobResponse]
 
 
 class RollbackImportResponse(BaseModel):
@@ -171,7 +169,7 @@ class RollbackImportResponse(BaseModel):
 
     success: bool
     message: str
-    deletedRecords: Dict[str, int]
+    deletedRecords: dict[str, int]
 
 
 class OAuthInitiateResponse(BaseModel):
@@ -196,3 +194,14 @@ class OAuthCallbackRequest(BaseModel):
     state: Optional[str] = None
     accessToken: Optional[str] = None  # Used when returning from group selection
     options: Optional[ImportOptions] = None
+
+    @model_validator(mode="after")
+    def check_required_fields(self) -> "OAuthCallbackRequest":
+        """Validate that either (code and state) or accessToken is provided."""
+        has_oauth = self.code is not None and self.state is not None
+        has_token = self.accessToken is not None
+        if not has_oauth and not has_token:
+            raise ValueError(
+                "Either both code and state must be provided (OAuth flow) or accessToken must be provided (token flow)"
+            )
+        return self

@@ -529,9 +529,17 @@ class ImportService:
                         else:
                             # Create placeholder user
                             placeholder_id = ObjectId()
+                            # Build name from firstName and lastName, fallback to name field, then "Unknown User"
+                            first_name = member.get("firstName", "")
+                            last_name = member.get("lastName", "")
+                            full_name = " ".join(
+                                filter(None, [first_name, last_name])
+                            ).strip()
+                            if not full_name:
+                                full_name = member.get("name") or "Unknown User"
                             placeholder_user = {
                                 "_id": placeholder_id,
-                                "name": member.get("name", "Unknown User"),
+                                "name": full_name,
                                 "email": member.get(
                                     "email"
                                 ),  # Email for future mapping

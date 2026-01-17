@@ -256,10 +256,11 @@ export const Groups = () => {
             className={isNeo ? 'rounded-none' : ''}
           />
           <div className="space-y-1.5">
-            <label className={`text-sm font-bold ${isNeo ? 'text-black uppercase' : (mode === 'dark' ? 'text-gray-300' : 'text-gray-700')}`}>
+            <label htmlFor="new-group-currency" className={`text-sm font-bold ${isNeo ? 'text-black uppercase' : (mode === 'dark' ? 'text-gray-300' : 'text-gray-700')}`}>
               Currency
             </label>
             <select
+              id="new-group-currency"
               value={newGroupCurrency}
               onChange={(e) => setNewGroupCurrency(e.target.value)}
               className={`w-full p-3 font-bold transition-all outline-none ${isNeo

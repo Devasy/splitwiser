@@ -73,7 +73,6 @@ export const SplitwiseGroupSelection = () => {
 
     // Check if user is authenticated
     const token = localStorage.getItem('access_token');
-    console.log('Auth token present:', !!token);
     if (!token) {
       addToast('Authentication required. Please log in again.', 'error');
       navigate('/login');
@@ -123,6 +122,7 @@ export const SplitwiseGroupSelection = () => {
       <div className="max-w-3xl mx-auto">
         {/* Back Button */}
         <button
+          type="button"
           onClick={() => navigate('/import/splitwise')}
           className={`flex items-center gap-1 mb-4 text-sm font-medium transition-colors ${isNeo
             ? 'text-black hover:text-gray-700'
@@ -159,6 +159,7 @@ export const SplitwiseGroupSelection = () => {
             </span> of {groups.length} groups selected
           </div>
           <button
+            type="button"
             onClick={handleSelectAll}
             className={`text-sm font-medium transition-colors ${isNeo
               ? 'text-black hover:text-gray-700'
@@ -232,7 +233,7 @@ export const SplitwiseGroupSelection = () => {
                       <div className={`flex items-center gap-1 font-bold ${isNeo ? 'text-blue-600' : 'text-gray-900 dark:text-white'}`}>
                         <span>{getCurrencySymbol(group.currency)}</span>
                         <span>
-                          {new Intl.NumberFormat('en-IN', {
+                          {new Intl.NumberFormat(undefined, {
                             minimumFractionDigits: 0,
                             maximumFractionDigits: 0,
                           }).format(group.totalAmount)}
@@ -255,6 +256,7 @@ export const SplitwiseGroupSelection = () => {
             : 'bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6'}`}
         >
           <button
+            type="button"
             onClick={handleStartImport}
             disabled={importing || selectedGroupIds.size === 0}
             className={`w-full py-4 px-6 flex items-center justify-center gap-3 transition-all ${isNeo

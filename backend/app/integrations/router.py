@@ -2,6 +2,8 @@
 API router for import operations.
 """
 
+import logging
+
 from app.auth.security import get_current_user
 from app.config import settings
 from app.database import get_database
@@ -20,6 +22,8 @@ from app.integrations.service import ImportService
 from fastapi import APIRouter, Depends, HTTPException, status
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from splitwise import Splitwise
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/import", tags=["import"])
 
@@ -85,19 +89,18 @@ async def splitwise_oauth_callback(
         # Determine if we need to exchange code or use provided token
         if request.accessToken:
             # Using stored access token from previous exchange
-            print("Using stored access token")
+            logger.debug("Using stored access token (token present: True)")
             access_token_str = request.accessToken
         elif request.code:
             # Exchange authorization code for access token
-            print(f"Attempting OAuth token exchange with code: {request.code[:10]}...")
-            print(f"Redirect URI: {settings.frontend_url}/#/import/splitwise/callback")
+            logger.debug("Attempting OAuth token exchange (code present: True)")
 
             access_token = sObj.getOAuth2AccessToken(
                 code=request.code,
                 redirect_uri=f"{settings.frontend_url}/#/import/splitwise/callback",
             )
 
-            print(f"Got access token: {access_token}")
+            logger.debug("OAuth token exchange successful")
             access_token_str = access_token["access_token"]
         else:
             raise HTTPException(
@@ -147,10 +150,7 @@ async def splitwise_oauth_callback(
         )
 
     except Exception as e:
-        import traceback
-
-        print(f"OAuth callback error: {str(e)}")
-        print(f"Traceback: {traceback.format_exc()}")
+        logger.error(f"OAuth callback error: {str(e)}")
         raise HTTPException(
             status_code=400, detail=f"Failed to exchange OAuth code: {str(e)}"
         )

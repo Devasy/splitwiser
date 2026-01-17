@@ -62,8 +62,8 @@ class MockSplitwiseExpense:
         self._is_payment = is_payment
         self._group_id = group_id
         self._deleted_at = deleted_at
-        self._created_at = created_at or datetime.now()
-        self._updated_at = updated_at or datetime.now()
+        self._created_at = created_at or datetime.now(timezone.utc)
+        self._updated_at = updated_at or datetime.now(timezone.utc)
 
     def getId(self):
         return self._id

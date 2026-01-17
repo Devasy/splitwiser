@@ -93,6 +93,7 @@ async def verify_migration():
 
     except Exception as e:
         logger.error(f"❌ Verification failed: {str(e)}")
+        raise
     finally:
         if client:
             client.close()

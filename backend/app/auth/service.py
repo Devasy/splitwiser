@@ -107,22 +107,25 @@ class AuthService:
             # Check if it's a placeholder from import
             if existing_user.get("isPlaceholder"):
                 # Link this signup to the placeholder account
-                logger.info(f"Linking signup to placeholder account for {email}")
+                logger.info(
+                    f"Linking signup to placeholder account for user_id={existing_user['_id']}"
+                )
+                hashed_password = get_password_hash(password)
                 await db.users.update_one(
                     {"_id": existing_user["_id"]},
                     {
                         "$set": {
-                            "hashed_password": get_password_hash(password),
+                            "hashed_password": hashed_password,
                             "name": name,  # Update with new name if provided
                             "isPlaceholder": False,
                             "auth_provider": "email",
-                            "created_at": datetime.now(timezone.utc),
+                            "activated_at": datetime.now(timezone.utc),
                         }
                     },
                 )
 
                 # Return the linked account
-                existing_user["hashed_password"] = get_password_hash(password)
+                existing_user["hashed_password"] = hashed_password
                 existing_user["name"] = name
                 existing_user["isPlaceholder"] = False
 
@@ -262,7 +265,7 @@ class AuthService:
                 if user.get("isPlaceholder"):
                     # Activate the placeholder account with Google credentials
                     logger.info(
-                        f"Activating placeholder account for {email} via Google auth"
+                        f"Activating placeholder account via Google auth for user_id={user['_id']}"
                     )
                     update_data = {
                         "firebase_uid": firebase_uid,
@@ -280,8 +283,14 @@ class AuthService:
                         )
                         user.update(update_data)
                     except PyMongoError as e:
-                        logger.warning(
-                            "Failed to activate placeholder account: %s", str(e)
+                        logger.error(
+                            "Failed to activate placeholder account for user_id=%s: %s",
+                            user["_id"],
+                            str(e),
+                        )
+                        raise HTTPException(
+                            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                            detail="Failed to activate account",
                         )
                 else:
                     # Regular user - update info if needed

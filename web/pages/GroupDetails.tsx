@@ -894,10 +894,11 @@ export const GroupDetails = () => {
                                     required
                                 />
                                 <div className="space-y-1.5">
-                                    <label className={`text-sm font-bold ${style === THEMES.NEOBRUTALISM ? 'text-black uppercase' : 'opacity-70'}`}>
+                                    <label htmlFor="group-currency-select" className={`text-sm font-bold ${style === THEMES.NEOBRUTALISM ? 'text-black uppercase' : 'opacity-70'}`}>
                                         Group Currency
                                     </label>
                                     <select
+                                        id="group-currency-select"
                                         value={editGroupCurrency}
                                         onChange={e => setEditGroupCurrency(e.target.value)}
                                         disabled={!isAdmin}
@@ -982,8 +983,8 @@ export const GroupDetails = () => {
                         </div>
                     )}
                 </div>
-            </Modal >
-        </div >
+            </Modal>
+        </div>
     );
 };
 

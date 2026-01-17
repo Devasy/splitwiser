@@ -290,13 +290,21 @@ def multi_payer_expense():
 def ins_valsura_scenario():
     """
     Simplified version of the "Ins valsura internship" group scenario.
-    This is the key bug we fixed - the final balances must be:
+    This fixture produces final balances:
     - Devasy: +78.62 (is owed)
     - Dwij: -78.62 (owes)
     - Deep: 0 (settled)
     - Yaksh: 0 (settled)
 
-    We simulate this with a series of expenses and payments that produce these balances.
+    Transactions:
+    1. Devasy pays 400 for tickets (100 each for 4 people)
+       -> Devasy +300, Deep -100, Dwij -100, Yaksh -100
+    2. Deep pays Devasy 100
+       -> Devasy +200, Deep 0, Dwij -100, Yaksh -100
+    3. Yaksh pays Devasy 100
+       -> Devasy +100, Deep 0, Dwij -100, Yaksh 0
+    4. Dwij pays 21.38 for just Devasy
+       -> Devasy +78.62, Deep 0, Dwij -78.62, Yaksh 0
     """
     return [
         # Expense 1: Devasy pays 400 for tickets, split 4 ways (100 each)
@@ -365,33 +373,24 @@ def ins_valsura_scenario():
                 },
             ],
         },
-        # Expense 2: Dwij pays 78.62 for something, but only Devasy owes
+        # Expense 2: Dwij pays 21.38 for just Devasy
         {
             "description": "Dwij expense",
             "users": [
                 {
                     "userId": "dwij",
                     "userName": "Dwij",
-                    "paidShare": 78.62,
+                    "paidShare": 21.38,
                     "owedShare": 0.0,
                 },
                 {
                     "userId": "devasy",
                     "userName": "Devasy",
                     "paidShare": 0.0,
-                    "owedShare": 78.62,
+                    "owedShare": 21.38,
                 },
             ],
         },
-        # Payment 3: Devasy pays Dwij 78.62 (this nets out the above)
-        # But Dwij still owes Devasy 100 from the tickets!
-        # Wait, let me recalculate...
-        # After tickets: Devasy +300, Deep -100, Dwij -100, Yaksh -100
-        # After Deep pays Devasy: Devasy +200, Deep 0, Dwij -100, Yaksh -100
-        # After Yaksh pays Devasy: Devasy +100, Deep 0, Dwij -100, Yaksh 0
-        # After Dwij expense: Devasy +100 - 78.62 = +21.38, Dwij -100 + 78.62 = -21.38
-        # Hmm, this doesn't give +78.62 for Devasy...
-        # Let me use a simpler scenario that gives the expected result:
     ]
 
 
@@ -935,10 +934,10 @@ class TestScenarios:
         )
 
         # Verify final balances
-        assert abs(balances.get("devasy", 0) - 78.62) < 0.1
-        assert abs(balances.get("dwij", 0) - (-78.62)) < 0.1
-        assert abs(balances.get("deep", 0)) < 0.1
-        assert abs(balances.get("yaksh", 0)) < 0.1
+        assert abs(balances.get("devasy", 0) - 78.62) < 0.01
+        assert abs(balances.get("dwij", 0) - (-78.62)) < 0.01
+        assert abs(balances.get("deep", 0)) < 0.01
+        assert abs(balances.get("yaksh", 0)) < 0.01
 
         # Should have one optimized settlement
         assert len(optimized) == 1
