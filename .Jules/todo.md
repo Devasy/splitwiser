@@ -34,12 +34,12 @@
   - Impact: Guides new users, makes app feel polished
   - Size: ~70 lines
 
-- [ ] **[ux]** Error boundary with retry for API failures
+- [x] **[ux]** Error boundary with retry for API failures
+  - Completed: 2026-01-14
   - Files: Create `web/components/ErrorBoundary.tsx`, wrap app
   - Context: Catch errors gracefully with retry button
   - Impact: App doesn't crash, users can recover
   - Size: ~60 lines
-  - Added: 2026-01-01
 
 ### Mobile
 
@@ -154,5 +154,9 @@
   - Completed: 2026-01-11
   - Files modified: `web/pages/Auth.tsx`
   - Impact: Users know immediately if input is valid via inline error messages and red borders.
+- [x] **[ux]** Error boundary with retry for API failures
+  - Completed: 2026-01-14
+  - Files modified: `web/components/ErrorBoundary.tsx`, `web/App.tsx`
+  - Impact: Prevents app crashes and provides a recovery mechanism with a dual-theme UI.
 
 _No tasks completed yet. Move tasks here after completion._

@@ -1,5 +1,6 @@
 import React from 'react';
 import { HashRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { Layout } from './components/layout/Layout';
 import { ThemeWrapper } from './components/layout/ThemeWrapper';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -51,8 +52,10 @@ const App = () => {
       <ToastProvider>
         <AuthProvider>
           <HashRouter>
+            <ErrorBoundary>
               <AppRoutes />
-              <ToastContainer />
+            </ErrorBoundary>
+            <ToastContainer />
           </HashRouter>
         </AuthProvider>
       </ToastProvider>

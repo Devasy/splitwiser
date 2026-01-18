@@ -7,20 +7,19 @@
 ## [Unreleased]
 
 ### Added
+- **ErrorBoundary**: Implemented a global `ErrorBoundary` component (`web/components/ErrorBoundary.tsx`) that catches render errors and displays a user-friendly fallback UI.
+  - Supports both Neobrutalism and Glassmorphism themes.
+  - Provides "Retry" and "Back to Home" actions.
+  - Wrapped `AppRoutes` in `web/App.tsx` to prevent white-screen crashes.
+  - Verified with Playwright tests ensuring UI appears correctly on error.
+
+### Changed
 - Inline form validation in Auth page with real-time feedback and proper ARIA accessibility support (`aria-invalid`, `aria-describedby`, `role="alert"`).
 - Dashboard skeleton loading state (`DashboardSkeleton`) to improve perceived performance during data fetch.
 - Comprehensive `EmptyState` component for Groups and Friends pages to better guide new users.
 - Toast notification system (`ToastContext`, `Toast` component) for providing non-blocking user feedback.
 - Keyboard navigation support for Groups page, enabling accessibility for power users.
-
-### Changed
-- Updated JULES_PROMPT.md based on review of successful PRs:
-  - Emphasized complete system implementation over piecemeal changes
-  - Added best practices from successful PRs (Toast system, keyboard navigation iteration)
-  - Refined task categories to focus on complete features
-  - Enhanced validation checklist
-  - Added implementation phases guide
-  - Documented successful patterns to repeat
+- Updated JULES_PROMPT.md based on review of successful PRs.
 
 ### Planned
 - See `todo.md` for queued tasks
