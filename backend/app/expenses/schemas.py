@@ -226,6 +226,7 @@ class ExpenseAnalytics(BaseModel):
     avgExpenseAmount: float
     topCategories: List[Dict[str, Any]]
     memberContributions: List[Dict[str, Any]]
+    contributionTimeline: List[Dict[str, Any]] = []
     expenseTrends: List[Dict[str, Any]]
 
 

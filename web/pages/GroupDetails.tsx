@@ -1,7 +1,8 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowRight, Banknote, Check, Copy, DollarSign, Hash, Layers, LogOut, PieChart, Plus, Receipt, Settings, Share2, Trash2, UserMinus } from 'lucide-react';
+import { ArrowRight, Banknote, Check, Copy, DollarSign, Hash, Layers, LogOut, PieChart, Plus, Receipt, Search, Settings, Share2, Trash2, UserMinus } from 'lucide-react';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { AnalyticsContent } from '../components/AnalyticsContent';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Modal } from '../components/ui/Modal';
@@ -16,6 +17,7 @@ import {
     deleteExpense,
     deleteGroup,
     getExpenses,
+    getGroupAnalytics,
     getGroupDetails,
     getGroupMembers,
     getOptimizedSettlements,
@@ -23,7 +25,7 @@ import {
     updateExpense,
     updateGroup
 } from '../services/api';
-import { Expense, Group, GroupMember, SplitType } from '../types';
+import { Expense, Group, GroupAnalytics, GroupMember, SplitType } from '../types';
 import { formatCurrency } from '../utils/formatters';
 
 type UnequalMode = 'amount' | 'percentage' | 'shares';
@@ -45,10 +47,18 @@ export const GroupDetails = () => {
 
     const [group, setGroup] = useState<Group | null>(null);
     const [expenses, setExpenses] = useState<Expense[]>([]);
+    const [totalSummary, setTotalSummary] = useState<any>(null); // Summary for ALL expenses in group
     const [members, setMembers] = useState<GroupMember[]>([]);
     const [settlements, setSettlements] = useState<Settlement[]>([]);
     const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState<'expenses' | 'settlements'>('expenses');
+    const [activeTab, setActiveTab] = useState<'expenses' | 'settlements' | 'analytics'>('expenses');
+
+    // Search and Filter State
+    const [searchQuery, setSearchQuery] = useState('');
+    const [analytics, setAnalytics] = useState<GroupAnalytics | null>(null);
+    const [timeframe, setTimeframe] = useState<'month' | '6months' | 'year'>('month');
+    const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+    const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
 
     // Pagination State
     const [page, setPage] = useState(1);
@@ -88,6 +98,39 @@ export const GroupDetails = () => {
         return me?.role === 'admin';
     }, [members, user?._id]);
 
+    // Calculate group totals using totalSummary (for ALL expenses, not filtered)
+    const groupTotals = useMemo(() => {
+        if (!totalSummary) {
+            // Fallback to calculating from current expenses if totalSummary not available yet
+            const totalSpent = expenses.reduce((sum, e) => sum + e.amount, 0);
+            const myContribution = expenses
+                .filter(e => e.paidBy === user?._id)
+                .reduce((sum, e) => sum + e.amount, 0);
+            const myShare = expenses.reduce((sum, e) => {
+                const mySplit = e.splits.find(s => s.userId === user?._id);
+                return sum + (mySplit?.amount || 0);
+            }, 0);
+            const netBalance = myContribution - myShare;
+
+            return {
+                totalSpent,
+                myContribution,
+                myShare,
+                netBalance,
+                expenseCount: expenses.length
+            };
+        }
+
+        // Use totalSummary from backend (includes ALL expenses)
+        return {
+            totalSpent: totalSummary.totalAmount || 0,
+            myContribution: 0, // This would need to be added to backend summary
+            myShare: 0, // This would need to be added to backend summary
+            netBalance: 0, // This would need to be added to backend summary
+            expenseCount: totalSummary.expenseCount || 0
+        };
+    }, [totalSummary, expenses, user?._id]);
+
     useEffect(() => {
         if (id) fetchData();
     }, [id]);
@@ -109,13 +152,31 @@ export const GroupDetails = () => {
         }
     }, [members, group, user, editingExpenseId, payerId, paymentPayerId, paymentPayeeId]);
 
+    // Search with debounce
+    const [debouncedSearch, setDebouncedSearch] = useState('');
+
+    useEffect(() => {
+        const handler = setTimeout(() => {
+            setDebouncedSearch(searchQuery);
+        }, 300); // 300ms debounce
+
+        return () => clearTimeout(handler);
+    }, [searchQuery]);
+
+    // Refetch when search changes
+    useEffect(() => {
+        if (id && !loading) {
+            fetchData();
+        }
+    }, [debouncedSearch]);
+
     const fetchData = async () => {
         if (!id) return;
         setLoading(true);
         try {
             const [groupRes, expRes, memRes, setRes] = await Promise.all([
                 getGroupDetails(id),
-                getExpenses(id),
+                getExpenses(id, 1, 20, debouncedSearch || undefined),
                 getGroupMembers(id),
                 getOptimizedSettlements(id)
             ]);
@@ -127,6 +188,11 @@ export const GroupDetails = () => {
             setSettlements(setRes.data.optimizedSettlements);
             setEditGroupName(groupRes.data.name);
             setEditGroupCurrency(groupRes.data.currency || 'USD');
+
+            // Store totalSummary separately
+            if (expRes.data.totalSummary) {
+                setTotalSummary(expRes.data.totalSummary);
+            }
         } catch (err) {
             console.error(err);
         } finally {
@@ -150,6 +216,60 @@ export const GroupDetails = () => {
             setLoadingMore(false);
         }
     };
+
+    const fetchAnalytics = async () => {
+        if (!id) return;
+        try {
+            // For 6 months, don't pass month/year as backend handles it
+            if (timeframe === '6months') {
+                const res = await getGroupAnalytics(id, '6months', undefined, undefined);
+                setAnalytics(res.data);
+            } else if (timeframe === 'year') {
+                const res = await getGroupAnalytics(id, 'year', selectedYear, undefined);
+                setAnalytics(res.data);
+            } else {
+                // month - use selected year and month
+                const res = await getGroupAnalytics(id, 'month', selectedYear, selectedMonth);
+                setAnalytics(res.data);
+            }
+        } catch (err) {
+            console.error(err);
+            addToast("Failed to load analytics", "error");
+        }
+    };
+
+    // Fetch analytics when switching to analytics tab
+    useEffect(() => {
+        if (activeTab === 'analytics' && !analytics) {
+            fetchAnalytics();
+        }
+    }, [activeTab]);
+
+    // Refetch analytics when timeframe, year, or month changes
+    useEffect(() => {
+        if (activeTab === 'analytics' && analytics) {
+            fetchAnalytics();
+        }
+    }, [timeframe, selectedYear, selectedMonth]);
+
+    // Fetch settlements
+    const fetchSettlements = async () => {
+        if (!id) return;
+        try {
+            const res = await getOptimizedSettlements(id);
+            setSettlements(res.data.optimizedSettlements);
+        } catch (err) {
+            console.error(err);
+            addToast("Failed to load settlements", "error");
+        }
+    };
+
+    // Fetch settlements when switching to settlements tab
+    useEffect(() => {
+        if (activeTab === 'settlements') {
+            fetchSettlements();
+        }
+    }, [activeTab]);
 
     const copyToClipboard = () => {
         if (group?.joinCode) {
@@ -461,6 +581,34 @@ export const GroupDetails = () => {
                 </div>
             </motion.div>
 
+            {/* Group Totals Summary Cards */}
+            <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-5xl mx-auto"
+            >
+                <div className={`p-4 text-center ${style === THEMES.NEOBRUTALISM ? 'bg-white border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]' : 'bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10'}`}>
+                    <p className="text-xs font-bold opacity-50 uppercase tracking-wider">Total Spent</p>
+                    <p className="text-2xl font-black">{formatCurrency(groupTotals.totalSpent, group.currency)}</p>
+                    <p className="text-xs opacity-50">{groupTotals.expenseCount} expenses</p>
+                </div>
+                <div className={`p-4 text-center ${style === THEMES.NEOBRUTALISM ? 'bg-emerald-50 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]' : 'bg-emerald-500/10 backdrop-blur-sm rounded-2xl border border-emerald-500/20'}`}>
+                    <p className="text-xs font-bold opacity-50 uppercase tracking-wider">You Paid</p>
+                    <p className="text-2xl font-black text-emerald-600">{formatCurrency(groupTotals.myContribution, group.currency)}</p>
+                </div>
+                <div className={`p-4 text-center ${style === THEMES.NEOBRUTALISM ? 'bg-blue-50 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]' : 'bg-blue-500/10 backdrop-blur-sm rounded-2xl border border-blue-500/20'}`}>
+                    <p className="text-xs font-bold opacity-50 uppercase tracking-wider">Your Share</p>
+                    <p className="text-2xl font-black text-blue-600">{formatCurrency(groupTotals.myShare, group.currency)}</p>
+                </div>
+                <div className={`p-4 text-center ${style === THEMES.NEOBRUTALISM ? (groupTotals.netBalance >= 0 ? 'bg-emerald-100' : 'bg-red-100') + ' border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]' : (groupTotals.netBalance >= 0 ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-red-500/10 border-red-500/20') + ' backdrop-blur-sm rounded-2xl border'}`}>
+                    <p className="text-xs font-bold opacity-50 uppercase tracking-wider">Net Balance</p>
+                    <p className={`text-2xl font-black ${groupTotals.netBalance >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                        {groupTotals.netBalance >= 0 ? '+' : ''}{formatCurrency(groupTotals.netBalance, group.currency)}
+                    </p>
+                    <p className="text-xs opacity-50">{groupTotals.netBalance >= 0 ? 'owed to you' : 'you owe'}</p>
+                </div>
+            </motion.div>
+
             {/* Navigation Pills */}
             <div className="flex justify-center">
                 <div className={`p-1.5 flex gap-2 ${style === THEMES.NEOBRUTALISM ? 'bg-white border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-none' : 'bg-white/5 border border-white/10 backdrop-blur-xl rounded-2xl'}`}>
@@ -478,6 +626,13 @@ export const GroupDetails = () => {
                     >
                         <ScaleIcon /> Balances
                     </button>
+                    <button
+                        type="button"
+                        onClick={() => setActiveTab('analytics')}
+                        className={`px-6 py-2 font-bold transition-all flex items-center gap-2 ${activeTab === 'analytics' ? (style === THEMES.NEOBRUTALISM ? 'bg-purple-500 text-white rounded-none' : 'bg-purple-500/20 text-purple-400 shadow-sm rounded-xl') : 'opacity-60 hover:opacity-100'}`}
+                    >
+                        <PieChart size={18} /> Analytics
+                    </button>
                 </div>
             </div>
 
@@ -491,6 +646,37 @@ export const GroupDetails = () => {
                         exit={{ opacity: 0, y: -20 }}
                         className="space-y-4 max-w-3xl mx-auto"
                     >
+                        {/* Search Bar */}
+                        <div className={`relative ${style === THEMES.NEOBRUTALISM ? '' : ''}`}>
+                            <Search size={20} className="absolute left-4 top-1/2 -translate-y-1/2 opacity-50" />
+                            <input
+                                type="text"
+                                placeholder="Search expenses by description or tag..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className={`w-full pl-12 pr-4 py-3 font-medium ${style === THEMES.NEOBRUTALISM
+                                    ? 'bg-white border-2 border-black focus:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] focus:-translate-y-1 transition-all rounded-none'
+                                    : 'bg-white/5 border border-white/10 rounded-2xl backdrop-blur-sm focus:border-white/30 focus:bg-white/10'
+                                    } outline-none`}
+                            />
+                            {searchQuery && (
+                                <button
+                                    type="button"
+                                    onClick={() => setSearchQuery('')}
+                                    className="absolute right-4 top-1/2 -translate-y-1/2 opacity-50 hover:opacity-100"
+                                >
+                                    ✕
+                                </button>
+                            )}
+                        </div>
+
+                        {/* Search Results Count */}
+                        {searchQuery && (
+                            <p className="text-sm opacity-70">
+                                Found {expenses.length} expense{expenses.length !== 1 ? 's' : ''} matching "{searchQuery}"
+                            </p>
+                        )}
+
                         {loading ? Array(3).fill(0).map((_, i) => <Skeleton key={i} className="h-24 w-full rounded-2xl" />) :
                             expenses.map((expense, idx) => (
                                 <motion.div
@@ -555,6 +741,25 @@ export const GroupDetails = () => {
                                 </Button>
                             </div>
                         )}
+                    </motion.div>
+                ) : activeTab === 'analytics' ? (
+                    <motion.div
+                        key="analytics"
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        className="space-y-6 max-w-6xl mx-auto"
+                    >
+                        <AnalyticsContent
+                            analytics={analytics}
+                            groupCurrency={group?.currency || 'USD'}
+                            timeframe={timeframe}
+                            onTimeframeChange={setTimeframe}
+                            selectedYear={selectedYear}
+                            selectedMonth={selectedMonth}
+                            onYearChange={setSelectedYear}
+                            onMonthChange={setSelectedMonth}
+                        />
                     </motion.div>
                 ) : (
                     <motion.div
@@ -984,7 +1189,7 @@ export const GroupDetails = () => {
                     )}
                 </div>
             </Modal>
-        </div>
+        </div >
     );
 };
 

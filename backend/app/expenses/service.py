@@ -189,6 +189,7 @@ class ExpenseService:
         from_date: Optional[datetime] = None,
         to_date: Optional[datetime] = None,
         tags: Optional[List[str]] = None,
+        search: Optional[str] = None,
     ) -> Dict[str, Any]:
         """List expenses for a group with pagination and filtering"""
 
@@ -226,7 +227,14 @@ class ExpenseService:
         if tags:
             query["tags"] = {"$in": tags}
 
-        # Get total count
+        # Add search filter
+        if search:
+            query["$or"] = [
+                {"description": {"$regex": search, "$options": "i"}},
+                {"tags": {"$regex": search, "$options": "i"}},
+            ]
+
+        # Get total count for filtered results
         total = await self.expenses_collection.count_documents(query)
 
         # Get expenses with pagination
@@ -244,7 +252,7 @@ class ExpenseService:
             expense = await self._expense_doc_to_response(doc)
             expenses.append(expense)
 
-        # Calculate summary
+        # Calculate filtered summary (for current query)
         pipeline = [
             {"$match": query},
             {
@@ -259,12 +267,35 @@ class ExpenseService:
         summary_result = await self.expenses_collection.aggregate(pipeline).to_list(
             None
         )
-        summary = (
+        filtered_summary = (
             summary_result[0]
             if summary_result
             else {"totalAmount": 0, "expenseCount": 0, "avgExpense": 0}
         )
-        summary.pop("_id", None)
+        filtered_summary.pop("_id", None)
+
+        # Calculate TOTAL group summary (all expenses, no filters)
+        total_query = {"groupId": group_id}
+        total_pipeline = [
+            {"$match": total_query},
+            {
+                "$group": {
+                    "_id": None,
+                    "totalAmount": {"$sum": "$amount"},
+                    "expenseCount": {"$sum": 1},
+                    "avgExpense": {"$avg": "$amount"},
+                }
+            },
+        ]
+        total_summary_result = await self.expenses_collection.aggregate(
+            total_pipeline
+        ).to_list(None)
+        total_summary = (
+            total_summary_result[0]
+            if total_summary_result
+            else {"totalAmount": 0, "expenseCount": 0, "avgExpense": 0}
+        )
+        total_summary.pop("_id", None)
 
         return {
             "expenses": expenses,
@@ -276,7 +307,8 @@ class ExpenseService:
                 "hasNext": page * limit < total,
                 "hasPrev": page > 1,
             },
-            "summary": summary,
+            "summary": filtered_summary,  # Summary for filtered results
+            "totalSummary": total_summary,  # Summary for ALL expenses in group
         }
 
     async def get_expense_by_id(
@@ -1365,10 +1397,18 @@ class ExpenseService:
             else:
                 end_date = datetime(year, month + 1, 1)
             period_str = f"{year}-{month:02d}"
-        elif period == "year" and year:
-            start_date = datetime(year, 1, 1)
-            end_date = datetime(year + 1, 1, 1)
-            period_str = str(year)
+        elif period == "6months":
+            # Last 6 months from today
+            now = datetime.utcnow()
+            start_date = (now - timedelta(days=180)).replace(day=1)
+            end_date = now
+            period_str = f"Last 6 months"
+        elif period == "year":
+            # Use provided year or default to current year
+            target_year = year if year else datetime.utcnow().year
+            start_date = datetime(target_year, 1, 1)
+            end_date = datetime(target_year + 1, 1, 1)
+            period_str = str(target_year)
         else:
             # Default to current month
             now = datetime.utcnow()
@@ -1391,7 +1431,10 @@ class ExpenseService:
         # Analyze categories (tags)
         tag_stats = defaultdict(lambda: {"amount": 0, "count": 0})
         for expense in expenses:
-            for tag in expense.get("tags", ["uncategorized"]):
+            tags = expense.get("tags", [])
+            if not tags:
+                tags = ["uncategorized"]
+            for tag in tags:
                 tag_stats[tag]["amount"] += expense["amount"]
                 tag_stats[tag]["count"] += 1
 
@@ -1401,7 +1444,7 @@ class ExpenseService:
         ):
             top_categories.append(
                 {
-                    "tag": tag,
+                    "category": tag,  # Changed from 'tag' to 'category' for frontend consistency
                     "amount": stats["amount"],
                     "count": stats["count"],
                     "percentage": round(
@@ -1415,7 +1458,7 @@ class ExpenseService:
                 }
             )
 
-        # Member contributions
+        # Member contributions (aggregated)
         member_contributions = []
         group_members = {member["userId"]: member for member in group["members"]}
 
@@ -1428,7 +1471,7 @@ class ExpenseService:
             total_paid = sum(
                 expense["amount"]
                 for expense in expenses
-                if expense["createdBy"] == member_id
+                if expense["paidBy"] == member_id
             )
 
             total_owed = 0
@@ -1446,6 +1489,51 @@ class ExpenseService:
                     "netContribution": total_paid - total_owed,
                 }
             )
+
+        # Member contribution timeline (cumulative by date)
+        # Only generate data points for dates that have expenses
+        contribution_timeline = []
+
+        # Get unique expense dates, sorted
+        expense_dates = sorted(set(e["createdAt"].date() for e in expenses))
+
+        if expense_dates:
+            # Pre-fetch all member names to avoid repeated DB queries
+            member_names = {}
+            for member_id in group_members:
+                user = await self.users_collection.find_one(
+                    {"_id": ObjectId(member_id)}
+                )
+                member_names[member_id] = (
+                    user.get("name", "Unknown") if user else "Unknown"
+                )
+
+            # Generate timeline for each expense date
+            for expense_date in expense_dates:
+                day_data = {"date": expense_date.strftime("%Y-%m-%d")}
+
+                # Get expenses up to and including this date (cumulative)
+                cumulative_expenses = [
+                    e for e in expenses if e["createdAt"].date() <= expense_date
+                ]
+
+                # Calculate total expenses up to this date
+                total_expenses_cumulative = sum(
+                    e["amount"] for e in cumulative_expenses
+                )
+                day_data["Total Expenses"] = total_expenses_cumulative
+
+                # Calculate cumulative contributions for each member
+                for member_id, user_name in member_names.items():
+                    # Cumulative amount paid by this member
+                    cumulative_paid = sum(
+                        e["amount"]
+                        for e in cumulative_expenses
+                        if e["paidBy"] == member_id
+                    )
+                    day_data[user_name] = cumulative_paid
+
+                contribution_timeline.append(day_data)
 
         # Expense trends (daily)
         expense_trends = []
@@ -1470,6 +1558,7 @@ class ExpenseService:
             "avgExpenseAmount": round(avg_expense, 2),
             "topCategories": top_categories[:10],  # Top 10 categories
             "memberContributions": member_contributions,
+            "contributionTimeline": contribution_timeline,  # New timeline data
             "expenseTrends": expense_trends,
         }
 

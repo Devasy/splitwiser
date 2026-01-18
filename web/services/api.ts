@@ -80,7 +80,11 @@ export const getGroupMembers = async (id: string) => api.get(`/groups/${id}/memb
 export const joinGroup = async (joinCode: string) => api.post('/groups/join', { joinCode });
 
 // Expenses
-export const getExpenses = async (groupId: string, page: number = 1, limit: number = 20) => api.get(`/groups/${groupId}/expenses?page=${page}&limit=${limit}`);
+export const getExpenses = async (groupId: string, page: number = 1, limit: number = 20, search?: string) => {
+  const params = new URLSearchParams({ page: page.toString(), limit: limit.toString() });
+  if (search) params.append('search', search);
+  return api.get(`/groups/${groupId}/expenses?${params.toString()}`);
+};
 export const createExpense = async (groupId: string, data: any) => api.post(`/groups/${groupId}/expenses`, data);
 export const updateExpense = async (groupId: string, expenseId: string, data: any) => api.patch(`/groups/${groupId}/expenses/${expenseId}`, data);
 export const deleteExpense = async (groupId: string, expenseId: string) => api.delete(`/groups/${groupId}/expenses/${expenseId}`);
@@ -95,6 +99,17 @@ export const markSettlementPaid = async (groupId: string, settlementId: string) 
 export const getBalanceSummary = async () => api.get('/users/me/balance-summary');
 export const getFriendsBalance = async () => api.get('/users/me/friends-balance');
 export const updateProfile = async (data: { name?: string; imageUrl?: string }) => api.patch('/users/me', data);
+
+// Analytics
+export const getGroupAnalytics = async (groupId: string, period: string = 'month', year?: number, month?: number) => {
+  const params = new URLSearchParams({ period });
+  if (year) params.append('year', year.toString());
+  if (month) params.append('month', month.toString());
+  return api.get(`/groups/${groupId}/analytics?${params.toString()}`);
+};
+
+// Dashboard Analytics (all groups combined)
+export const getDashboardAnalytics = async () => api.get('/users/me/friends-balance');
 
 // Splitwise Import
 export const getSplitwiseAuthUrl = async () => api.get('/import/splitwise/authorize');
