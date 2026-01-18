@@ -115,3 +115,24 @@ apiClient.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+// Splitwise Import API
+export const getSplitwiseAuthUrl = () => {
+  return apiClient.get("/import/splitwise/authorize");
+};
+
+export const handleSplitwiseCallback = (code, state) => {
+  return apiClient.post("/import/splitwise/callback", { code, state });
+};
+
+export const startSplitwiseImport = (apiKey) => {
+  return apiClient.post("/import/splitwise/start", { api_key: apiKey });
+};
+
+export const getImportStatus = (importJobId) => {
+  return apiClient.get(`/import/status/${importJobId}`);
+};
+
+export const rollbackImport = (importJobId) => {
+  return apiClient.post(`/import/rollback/${importJobId}`);
+};

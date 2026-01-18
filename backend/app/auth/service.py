@@ -104,10 +104,45 @@ class AuthService:
         # Check if user already exists
         existing_user = await db.users.find_one({"email": email})
         if existing_user:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="User with this email already exists",
-            )
+            # Check if it's a placeholder from import
+            if existing_user.get("isPlaceholder"):
+                # Link this signup to the placeholder account
+                logger.info(
+                    f"Linking signup to placeholder account for user_id={existing_user['_id']}"
+                )
+                hashed_password = get_password_hash(password)
+                await db.users.update_one(
+                    {"_id": existing_user["_id"]},
+                    {
+                        "$set": {
+                            "hashed_password": hashed_password,
+                            "name": name,  # Update with new name if provided
+                            "isPlaceholder": False,
+                            "auth_provider": "email",
+                            "activated_at": datetime.now(timezone.utc),
+                        }
+                    },
+                )
+
+                # Return the linked account
+                # Update in-memory user object to match DB state
+                existing_user["hashed_password"] = hashed_password
+                existing_user["name"] = name
+                existing_user["isPlaceholder"] = False
+                existing_user["auth_provider"] = "email"
+                existing_user["activated_at"] = datetime.now(timezone.utc)
+
+                # Create refresh token
+                refresh_token = await self._create_refresh_token_record(
+                    str(existing_user["_id"])
+                )
+
+                return {"user": existing_user, "refresh_token": refresh_token}
+            else:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="User with this email already exists",
+                )
 
         # Create user document
         user_doc = {
@@ -229,21 +264,53 @@ class AuthService:
                     detail="Internal server error",
                 )
             if user:
-                # Update user info if needed
-                update_data = {}
-                if user.get("firebase_uid") != firebase_uid:
-                    update_data["firebase_uid"] = firebase_uid
-                if user.get("imageUrl") != picture and picture:
-                    update_data["imageUrl"] = picture
+                # Check if this is a placeholder account from import
+                if user.get("isPlaceholder"):
+                    # Activate the placeholder account with Google credentials
+                    logger.info(
+                        f"Activating placeholder account via Google auth for user_id={user['_id']}"
+                    )
+                    update_data = {
+                        "firebase_uid": firebase_uid,
+                        "isPlaceholder": False,
+                        "auth_provider": "google",
+                        "name": name if name else user.get("name"),
+                        "activated_at": datetime.now(timezone.utc),
+                    }
+                    if picture:
+                        update_data["imageUrl"] = picture
 
-                if update_data:
                     try:
                         await db.users.update_one(
                             {"_id": user["_id"]}, {"$set": update_data}
                         )
                         user.update(update_data)
                     except PyMongoError as e:
-                        logger.warning("Failed to update user profile: %s", str(e))
+                        logger.error(
+                            "Failed to activate placeholder account for user_id=%s: %s",
+                            user["_id"],
+                            str(e),
+                        )
+                        raise HTTPException(
+                            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                            detail="Failed to activate account",
+                        )
+                else:
+                    # Regular user - update info if needed
+                    update_data = {}
+                    if user.get("firebase_uid") != firebase_uid:
+                        update_data["firebase_uid"] = firebase_uid
+                    if user.get("imageUrl") != picture and picture:
+                        update_data["imageUrl"] = picture
+
+                    if update_data:
+                        try:
+                            await db.users.update_one(
+                                {"_id": user["_id"]}, {"$set": update_data}
+                            )
+                            user.update(update_data)
+                        except PyMongoError as e:
+                            logger.warning("Failed to update user profile: %s", str(e))
             else:
                 # Create new user
                 user_doc = {

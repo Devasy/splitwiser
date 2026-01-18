@@ -6,6 +6,7 @@ from app.database import close_mongo_connection, connect_to_mongo
 from app.expenses.routes import balance_router
 from app.expenses.routes import router as expenses_router
 from app.groups.routes import router as groups_router
+from app.integrations.router import router as integrations_router
 from app.user.routes import router as user_router
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -128,6 +129,7 @@ app.include_router(user_router)
 app.include_router(groups_router)
 app.include_router(expenses_router)
 app.include_router(balance_router)
+app.include_router(integrations_router)
 
 if __name__ == "__main__":
     import uvicorn

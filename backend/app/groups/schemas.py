@@ -1,6 +1,7 @@
 from datetime import datetime
 from typing import List, Optional
 
+from app.expenses.schemas import Currency
 from pydantic import BaseModel, ConfigDict, Field
 
 
@@ -19,13 +20,14 @@ class GroupMemberWithDetails(BaseModel):
 
 class GroupCreateRequest(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
-    currency: Optional[str] = "USD"
+    currency: Optional[Currency] = Currency.USD
     imageUrl: Optional[str] = None
 
 
 class GroupUpdateRequest(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=100)
     imageUrl: Optional[str] = None
+    currency: Optional[Currency] = None
 
 
 class GroupResponse(BaseModel):
