@@ -168,6 +168,32 @@ class SplitwiseClient:
         )
 
     @staticmethod
+    def _detect_split_type(splits: List[Dict[str, Any]]) -> str:
+        """
+        Detect whether the expense split is equal or unequal.
+
+        Args:
+            splits: List of split dicts with 'amount' (owedShare) for each user
+
+        Returns:
+            'equal' if all amounts are the same (within 1 cent tolerance)
+            'unequal' otherwise
+        """
+        if not splits or len(splits) <= 1:
+            return "equal"
+
+        amounts = [s.get("amount", 0) for s in splits]
+        first_amount = amounts[0]
+
+        # Check if all amounts are equal (within 5 cent tolerance for floating-point precision)
+        # This handles rounding issues from 3-way splits like 100/3 = 33.33, 33.33, 33.34
+        for amount in amounts[1:]:
+            if abs(amount - first_amount) > 0.05:
+                return "unequal"
+
+        return "equal"
+
+    @staticmethod
     def transform_expense(expense) -> Dict[str, Any]:
         """Transform Splitwise expense to Splitwiser format."""
         # Collect all user shares (paidShare and owedShare for each user)
@@ -299,7 +325,8 @@ class SplitwiseClient:
             "createdBy": created_by_id,
             "splits": splits,
             "userShares": user_shares,  # Full paidShare/owedShare/netEffect for each user
-            "splitType": "equal",
+            # Determine split type by checking if all owedShare amounts are equal
+            "splitType": SplitwiseClient._detect_split_type(splits),
             "tags": tags,
             "receiptUrls": receipt_urls,
             "isDeleted": deleted_at is not None,

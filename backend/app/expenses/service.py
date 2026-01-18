@@ -973,6 +973,9 @@ class ExpenseService:
             {"_id": ObjectId(settlement_id)}
         )
 
+        # Update cached balances for the group
+        await self._recalculate_group_balances(group_id)
+
         return Settlement(**{**settlement_doc, "_id": str(settlement_doc["_id"])})
 
     async def delete_settlement(
@@ -992,6 +995,10 @@ class ExpenseService:
         result = await self.settlements_collection.delete_one(
             {"_id": ObjectId(settlement_id), "groupId": group_id}
         )
+
+        # Update cached balances for the group if deletion was successful
+        if result.deleted_count > 0:
+            await self._recalculate_group_balances(group_id)
 
         return result.deleted_count > 0
 

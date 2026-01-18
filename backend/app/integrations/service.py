@@ -696,6 +696,13 @@ class ImportService:
                         else None
                     )
                     if deleted_at:
+                        # Increment progress counter to keep progress consistent
+                        await self._update_checkpoint(
+                            import_job_id,
+                            "expensesImported.completed",
+                            1,
+                            increment=True,
+                        )
                         continue
 
                 expense_data = SplitwiseClient.transform_expense(expense)
@@ -800,7 +807,16 @@ class ImportService:
                 ]
 
                 # Create expense record
-                payer_id = creditors[0][0] if creditors else user_id
+                # Determine payer from paidShare, not from netEffect (creditors)
+                # netEffect can be 0 when someone pays only for themselves
+                # (e.g., paid $10, owes $10 -> netEffect = $0)
+                # We need to find who actually paid money
+                paid_by = max(mapped_shares, key=lambda s: s["paidShare"], default=None)
+                payer_id = (
+                    paid_by["userId"]
+                    if paid_by and paid_by["paidShare"] > 0
+                    else user_id
+                )
                 new_expense = {
                     "_id": ObjectId(),
                     "groupId": group_mapping["splitwiserId"],

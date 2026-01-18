@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from app.config import logger
-from app.database import get_database
+from app.database import get_database, mongodb
 from bson import ObjectId, errors
 from fastapi import HTTPException
 
@@ -309,26 +309,31 @@ class GroupService:
         # Check if imported
         is_imported = group.get("importedFrom") == "splitwise"
 
-        # Delete expenses
-        # Note: groupId in expenses is stored as string
-        await db.expenses.delete_many({"groupId": group_id})
+        # Use transaction to ensure atomicity of all deletions
+        # If any delete fails, all changes are rolled back
+        async with await mongodb.client.start_session() as session:
+            async with session.start_transaction():
+                # Delete expenses
+                # Note: groupId in expenses is stored as string
+                await db.expenses.delete_many({"groupId": group_id}, session=session)
 
-        # Delete settlements
-        await db.settlements.delete_many({"groupId": group_id})
+                # Delete settlements
+                await db.settlements.delete_many({"groupId": group_id}, session=session)
 
-        # Delete the group itself
-        result = await db.groups.delete_one({"_id": obj_id})
+                # Delete the group itself
+                result = await db.groups.delete_one({"_id": obj_id}, session=session)
 
-        if result.deleted_count == 1:
-            if is_imported:
-                # Remove ID mapping for this group
-                # We do NOT remove the user mappings because users might be in other groups
-                # We do NOT remove import jobs because history is useful
-                await db.splitwise_id_mappings.delete_one(
-                    {"entityType": "group", "splitwiserId": group_id}
-                )
+                if result.deleted_count == 1:
+                    if is_imported:
+                        # Remove ID mapping for this group
+                        # We do NOT remove the user mappings because users might be in other groups
+                        # We do NOT remove import jobs because history is useful
+                        await db.splitwise_id_mappings.delete_one(
+                            {"entityType": "group", "splitwiserId": group_id},
+                            session=session,
+                        )
 
-            return True
+                    return True
 
         return False
 

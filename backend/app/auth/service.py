@@ -125,9 +125,12 @@ class AuthService:
                 )
 
                 # Return the linked account
+                # Update in-memory user object to match DB state
                 existing_user["hashed_password"] = hashed_password
                 existing_user["name"] = name
                 existing_user["isPlaceholder"] = False
+                existing_user["auth_provider"] = "email"
+                existing_user["activated_at"] = datetime.now(timezone.utc)
 
                 # Create refresh token
                 refresh_token = await self._create_refresh_token_record(

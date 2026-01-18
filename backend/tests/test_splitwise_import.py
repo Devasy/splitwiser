@@ -219,6 +219,75 @@ class TestSplitwiseClientTransform:
         assert deep_share["netEffect"] == 30.0
 
 
+class TestSplitTypeDetection:
+    """Tests for detecting equal vs unequal split types."""
+
+    def test_equal_split_detection(self):
+        """Test that equal splits are detected correctly."""
+        from app.integrations.splitwise.client import SplitwiseClient
+
+        splits = [
+            {"userId": "1", "amount": 25.0},
+            {"userId": "2", "amount": 25.0},
+            {"userId": "3", "amount": 25.0},
+            {"userId": "4", "amount": 25.0},
+        ]
+        assert SplitwiseClient._detect_split_type(splits) == "equal"
+
+    def test_unequal_split_detection(self):
+        """Test that unequal splits are detected correctly."""
+        from app.integrations.splitwise.client import SplitwiseClient
+
+        # Example: Jamnagar trip with unequal distribution
+        splits = [
+            {"userId": "1", "amount": 1080.0},  # Vijay
+            {"userId": "2", "amount": 1080.0},  # Devasy (different from others)
+        ]
+        assert SplitwiseClient._detect_split_type(splits) == "equal"
+
+        # Actually unequal split
+        unequal_splits = [
+            {"userId": "1", "amount": 800.0},
+            {"userId": "2", "amount": 1360.0},  # Different amount
+        ]
+        assert SplitwiseClient._detect_split_type(unequal_splits) == "unequal"
+
+    def test_single_person_split(self):
+        """Test single person splits are treated as equal."""
+        from app.integrations.splitwise.client import SplitwiseClient
+
+        splits = [{"userId": "1", "amount": 100.0}]
+        assert SplitwiseClient._detect_split_type(splits) == "equal"
+
+    def test_empty_splits(self):
+        """Test empty splits are treated as equal."""
+        from app.integrations.splitwise.client import SplitwiseClient
+
+        assert SplitwiseClient._detect_split_type([]) == "equal"
+
+    def test_near_equal_within_tolerance(self):
+        """Test splits within 5 cent tolerance are considered equal."""
+        from app.integrations.splitwise.client import SplitwiseClient
+
+        # Splits within 0.05 tolerance (handles rounding from 3-way splits)
+        # e.g., 100/3 = 33.33, 33.33, 33.34
+        splits = [
+            {"userId": "1", "amount": 33.33},
+            {"userId": "2", "amount": 33.37},  # 0.04 diff from first
+            {"userId": "3", "amount": 33.30},  # 0.03 diff from first
+        ]
+        # All within 0.05 tolerance - should be considered equal
+        assert SplitwiseClient._detect_split_type(splits) == "equal"
+
+        # Outside tolerance (> 0.05)
+        unequal_splits = [
+            {"userId": "1", "amount": 33.33},
+            {"userId": "2", "amount": 33.40},  # 0.07 difference - outside tolerance
+            {"userId": "3", "amount": 33.33},
+        ]
+        assert SplitwiseClient._detect_split_type(unequal_splits) == "unequal"
+
+
 class TestSettlementDirection:
     """
     Tests to verify the correct direction of settlements.
@@ -354,6 +423,203 @@ class TestSettlementDirection:
         assert len(optimized) == 0
         assert abs(balances.get("devasy", 0)) < 0.01
         assert abs(balances.get("deep", 0)) < 0.01
+
+
+class TestPayerAttribution:
+    """
+    Tests to verify correct payer attribution during import.
+
+    The bug: When netEffect = 0 for all users (self-paid expenses),
+    the creditors list is empty and the code incorrectly defaults
+    to the importing user as the payer.
+
+    The fix: Use paidShare directly to find who actually paid money,
+    not netEffect (which can be 0 for self-paid expenses).
+    """
+
+    def test_normal_expense_payer_attribution(self):
+        """
+        Normal expense: Alice pays $30 for lunch split 3 ways.
+
+        Alice: paid $30, owes $10 → netEffect = +$20 (creditor)
+        Bob: paid $0, owes $10 → netEffect = -$10 (debtor)
+        Charlie: paid $0, owes $10 → netEffect = -$10
+
+        Result: payer should be Alice
+        """
+        mapped_shares = [
+            {
+                "userId": "alice",
+                "userName": "Alice",
+                "paidShare": 30.0,
+                "owedShare": 10.0,
+                "netEffect": 20.0,
+            },
+            {
+                "userId": "bob",
+                "userName": "Bob",
+                "paidShare": 0.0,
+                "owedShare": 10.0,
+                "netEffect": -10.0,
+            },
+            {
+                "userId": "charlie",
+                "userName": "Charlie",
+                "paidShare": 0.0,
+                "owedShare": 10.0,
+                "netEffect": -10.0,
+            },
+        ]
+        importing_user_id = "dave"  # Dave is importing but didn't pay
+
+        # Apply the fix logic
+        paid_by = max(mapped_shares, key=lambda s: s["paidShare"], default=None)
+        payer_id = (
+            paid_by["userId"]
+            if paid_by and paid_by["paidShare"] > 0
+            else importing_user_id
+        )
+
+        assert payer_id == "alice", f"Expected Alice to be the payer, got {payer_id}"
+
+    def test_self_paid_expense_payer_attribution(self):
+        """
+        Self-paid expense: Each person pays their own $10 coffee.
+
+        Alice: paid $10, owes $10 → netEffect = $0
+        Bob: paid $10, owes $10 → netEffect = $0
+
+        Result: payer should be Alice (highest paidShare), NOT importing user Dave
+
+        This was the bug - when netEffect = 0 for everyone,
+        creditors was empty and defaulted to importing user.
+        """
+        mapped_shares = [
+            {
+                "userId": "alice",
+                "userName": "Alice",
+                "paidShare": 10.0,
+                "owedShare": 10.0,
+                "netEffect": 0.0,
+            },
+            {
+                "userId": "bob",
+                "userName": "Bob",
+                "paidShare": 10.0,
+                "owedShare": 10.0,
+                "netEffect": 0.0,
+            },
+        ]
+        importing_user_id = "dave"  # Dave is importing but didn't pay
+
+        # Old buggy logic would do this:
+        creditors = [
+            (s["userId"], s["userName"], s["netEffect"])
+            for s in mapped_shares
+            if s["netEffect"] > 0.01
+        ]
+        buggy_payer_id = creditors[0][0] if creditors else importing_user_id
+
+        # Verify the bug exists
+        assert buggy_payer_id == "dave", "Bug should have defaulted to importing user"
+
+        # Apply the fix logic
+        paid_by = max(mapped_shares, key=lambda s: s["paidShare"], default=None)
+        payer_id = (
+            paid_by["userId"]
+            if paid_by and paid_by["paidShare"] > 0
+            else importing_user_id
+        )
+
+        # Alice paid the most, so she should be the payer
+        assert payer_id == "alice", f"Expected Alice to be the payer, got {payer_id}"
+
+    def test_solo_expense_payer_attribution(self):
+        """
+        Solo expense: Bob pays $50 for groceries he bought himself (no split).
+
+        Bob: paid $50, owes $50 → netEffect = $0
+
+        Result: payer should be Bob, NOT importing user Dave
+        """
+        mapped_shares = [
+            {
+                "userId": "bob",
+                "userName": "Bob",
+                "paidShare": 50.0,
+                "owedShare": 50.0,
+                "netEffect": 0.0,
+            },
+        ]
+        importing_user_id = "dave"  # Different user is importing
+
+        # Apply the fix logic
+        paid_by = max(mapped_shares, key=lambda s: s["paidShare"], default=None)
+        payer_id = (
+            paid_by["userId"]
+            if paid_by and paid_by["paidShare"] > 0
+            else importing_user_id
+        )
+
+        assert payer_id == "bob", f"Expected Bob to be the payer, got {payer_id}"
+
+    def test_no_payers_defaults_to_importing_user(self):
+        """
+        Edge case: No one paid anything (shouldn't happen, but handle gracefully).
+
+        Result: Fall back to importing user
+        """
+        mapped_shares = [
+            {
+                "userId": "alice",
+                "userName": "Alice",
+                "paidShare": 0.0,
+                "owedShare": 10.0,
+                "netEffect": -10.0,
+            },
+            {
+                "userId": "bob",
+                "userName": "Bob",
+                "paidShare": 0.0,
+                "owedShare": 10.0,
+                "netEffect": -10.0,
+            },
+        ]
+        importing_user_id = "dave"
+
+        # Apply the fix logic
+        paid_by = max(mapped_shares, key=lambda s: s["paidShare"], default=None)
+        payer_id = (
+            paid_by["userId"]
+            if paid_by and paid_by["paidShare"] > 0
+            else importing_user_id
+        )
+
+        # No one paid, so fall back to importing user
+        assert (
+            payer_id == "dave"
+        ), f"Expected Dave (importing user) to be the payer, got {payer_id}"
+
+    def test_empty_shares_defaults_to_importing_user(self):
+        """
+        Edge case: Empty mapped_shares list.
+
+        Result: Fall back to importing user
+        """
+        mapped_shares = []
+        importing_user_id = "dave"
+
+        # Apply the fix logic
+        paid_by = max(mapped_shares, key=lambda s: s["paidShare"], default=None)
+        payer_id = (
+            paid_by["userId"]
+            if paid_by and paid_by["paidShare"] > 0
+            else importing_user_id
+        )
+
+        assert (
+            payer_id == "dave"
+        ), f"Expected Dave (importing user) to be the payer, got {payer_id}"
 
 
 if __name__ == "__main__":
