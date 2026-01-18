@@ -6,6 +6,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { ToastProvider } from './contexts/ToastContext';
 import { ToastContainer } from './components/ui/Toast';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { Auth } from './pages/Auth';
 import { Dashboard } from './pages/Dashboard';
 import { Friends } from './pages/Friends';
@@ -48,14 +49,16 @@ const AppRoutes = () => {
 const App = () => {
   return (
     <ThemeProvider>
-      <ToastProvider>
-        <AuthProvider>
-          <HashRouter>
-              <AppRoutes />
-              <ToastContainer />
-          </HashRouter>
-        </AuthProvider>
-      </ToastProvider>
+      <ErrorBoundary>
+        <ToastProvider>
+          <AuthProvider>
+            <HashRouter>
+                <AppRoutes />
+                <ToastContainer />
+            </HashRouter>
+          </AuthProvider>
+        </ToastProvider>
+      </ErrorBoundary>
     </ThemeProvider>
   );
 };

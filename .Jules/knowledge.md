@@ -571,6 +571,30 @@ _Document errors and their solutions here as you encounter them._
 
 ---
 
+### ✅ Successful PR Pattern: Error Boundary System
+
+**Date:** 2026-01-14
+**Context:** Implemented a global Error Boundary with dual-theme support
+
+**What was implemented:**
+1. Created `ErrorBoundary` class component to catch errors.
+2. Created `ErrorFallback` functional component for UI rendering.
+3. Used `ErrorFallback` to leverage `useTheme` hooks (impossible in class component).
+4. Added "Try Again" (reload) and "Back to Home" (window location reset) actions.
+5. Integrated into `App.tsx` wrapping the router.
+
+**Gotchas & Solutions:**
+- **Hooks in Error Boundary:** Class components can't use hooks. Solution: Pass the `error` state to a child functional component (`ErrorFallback`) which CAN use hooks like `useTheme`.
+- **Typing Imports:** `componentDidCatch` uses `ErrorInfo` type. This MUST be imported from `react` to avoid TS build errors.
+- **HashRouter Navigation:** Inside an Error Boundary (especially if it wraps the Router), use `window.location.href = window.location.origin` to reliably reset to the home page, rather than router hooks which might be broken or inaccessible.
+
+**Key learnings:**
+- Always separate the Error Boundary logic (class) from the UI logic (function) when using contexts/hooks.
+- Verify imports for TypeScript types.
+- Robust "escape hatches" (like full page reload) are better than complex recovery logic for generic error boundaries.
+
+---
+
 ### ✅ Successful PR Pattern: EmptyState Component (#226)
 
 **Date:** 2026-01-13
