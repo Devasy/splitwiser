@@ -178,6 +178,29 @@ addToast('Message', 'success|error|info');
 - Auto-dismisses after 3 seconds
 - Stacks vertically in bottom-right
 
+### Error Boundary Pattern
+
+**Date:** 2026-02-01
+**Context:** Global error handling in `App.tsx`
+
+React Error Boundaries must be class components to use `componentDidCatch`. To support hooks (like `useTheme`), render a functional `ErrorFallback` component.
+
+```tsx
+// Class component captures error
+class ErrorBoundary extends Component {
+  state = { hasError: false, error: null };
+  static getDerivedStateFromError(error) { return { hasError: true, error }; }
+
+  render() {
+    if (this.state.hasError) {
+      // Functional component handles UI + Hooks
+      return <ErrorFallback error={this.state.error} reset={() => this.setState(...)} />;
+    }
+    return this.props.children;
+  }
+}
+```
+
 ### Form Validation Pattern
 
 **Date:** 2026-01-01
