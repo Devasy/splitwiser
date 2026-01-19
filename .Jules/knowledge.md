@@ -619,6 +619,29 @@ _Document errors and their solutions here as you encounter them._
 
 ---
 
+### ✅ Successful PR Pattern: Error Boundary with Dual Theme
+
+**Date:** 2026-01-14
+**Context:** Implementing global error handling
+
+**What was implemented:**
+1. Created `ErrorBoundary` class component (required for `componentDidCatch`).
+2. Created separate `ErrorFallback` functional component to support hooks (`useTheme`, `useNavigate` equivalent).
+3. Wrapped `AppRoutes` but kept `ToastContainer` outside to allow notifications during crashes.
+4. Implemented dual-theme styles (Glassmorphism/Neobrutalism) for the fallback UI.
+
+**Why it succeeded:**
+- ✅ Solved the "Class components can't use hooks" limitation by separating logic and UI.
+- ✅ Preserved the dual-theme requirement even in error states.
+- ✅ Verified using a temporary Playwright script that simulated specific render errors.
+
+**Key learnings:**
+- **Hooks in Error Boundaries:** You cannot use hooks in the `ErrorBoundary` class itself. Pass props or use a child component for the UI.
+- **Verification:** To verify `componentDidCatch`, you must throw a real error in the render phase. Event handler errors are NOT caught by React boundaries.
+- **Playwright Mocking:** When mocking routes for verification, ensure specific paths (e.g., `/users/me/balance-summary`) are registered *after* general wildcards (e.g., `**/users/me`) if the generic one handles the request first, or use strict matching.
+
+---
+
 ## Dependencies Reference
 
 ### Web

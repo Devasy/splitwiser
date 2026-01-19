@@ -12,8 +12,11 @@
 - Comprehensive `EmptyState` component for Groups and Friends pages to better guide new users.
 - Toast notification system (`ToastContext`, `Toast` component) for providing non-blocking user feedback.
 - Keyboard navigation support for Groups page, enabling accessibility for power users.
+- Global `ErrorBoundary` component to catch React render errors and display a dual-theme friendly fallback UI.
+- "Try Again" and "Back to Home" recovery actions for crashed application states.
 
 ### Changed
+- Wrapped `AppRoutes` in `web/App.tsx` with `ErrorBoundary` to ensure global error catching coverage.
 - Updated JULES_PROMPT.md based on review of successful PRs:
   - Emphasized complete system implementation over piecemeal changes
   - Added best practices from successful PRs (Toast system, keyboard navigation iteration)

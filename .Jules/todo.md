@@ -34,12 +34,10 @@
   - Impact: Guides new users, makes app feel polished
   - Size: ~70 lines
 
-- [ ] **[ux]** Error boundary with retry for API failures
-  - Files: Create `web/components/ErrorBoundary.tsx`, wrap app
-  - Context: Catch errors gracefully with retry button
-  - Impact: App doesn't crash, users can recover
-  - Size: ~60 lines
-  - Added: 2026-01-01
+- [x] **[ux]** Error boundary with retry for API failures
+  - Completed: 2026-01-14
+  - Files modified: `web/components/ErrorBoundary.tsx`, `web/App.tsx`
+  - Impact: Catches render errors, prevents white screens, and provides "Try Again" / "Back to Home" recovery options with dual-theme support.
 
 ### Mobile
 
