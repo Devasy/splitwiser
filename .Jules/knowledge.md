@@ -404,6 +404,15 @@ Tailwind breakpoints used:
 - `package.json` - Available scripts and tooling
 - `.git/logs/HEAD` or recent commits - Development direction
 
+### TypeScript React Type Issues
+
+**Date:** 2026-01-14
+**Context:** Implementing `ErrorBoundary` class component
+**Error:** `Property 'setState' does not exist on type 'ErrorBoundaryInner'` and similar errors.
+**Root Cause:** The project was missing `@types/react` and `@types/react-dom` dev dependencies, so TypeScript treated `React.Component` as `any` or didn't provide proper typings.
+**Solution:** Installed `@types/react` and `@types/react-dom`.
+**Files Affected:** `web/package.json`
+
 ---
 
 ## Project Direction & Goals

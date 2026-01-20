@@ -7,23 +7,13 @@
 ## [Unreleased]
 
 ### Added
-- Inline form validation in Auth page with real-time feedback and proper ARIA accessibility support (`aria-invalid`, `aria-describedby`, `role="alert"`).
-- Dashboard skeleton loading state (`DashboardSkeleton`) to improve perceived performance during data fetch.
-- Comprehensive `EmptyState` component for Groups and Friends pages to better guide new users.
-- Toast notification system (`ToastContext`, `Toast` component) for providing non-blocking user feedback.
-- Keyboard navigation support for Groups page, enabling accessibility for power users.
+- Global `ErrorBoundary` component to catch and display unhandled errors gracefully.
+- Support for dual themes (Neobrutalism/Glassmorphism) in `ErrorBoundary` fallback UI.
+- Retry functionality in `ErrorBoundary` to allow users to recover from crashes without refreshing.
 
 ### Changed
-- Updated JULES_PROMPT.md based on review of successful PRs:
-  - Emphasized complete system implementation over piecemeal changes
-  - Added best practices from successful PRs (Toast system, keyboard navigation iteration)
-  - Refined task categories to focus on complete features
-  - Enhanced validation checklist
-  - Added implementation phases guide
-  - Documented successful patterns to repeat
-
-### Planned
-- See `todo.md` for queued tasks
+- Wrapped `AppRoutes` and `ToastContainer` with `ErrorBoundary` in `web/App.tsx`.
+- Installed `@types/react` and `@types/react-dom` to fix TypeScript issues with class components.
 
 ---
 
