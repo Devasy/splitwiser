@@ -5,6 +5,7 @@ import { ThemeWrapper } from './components/layout/ThemeWrapper';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { ToastProvider } from './contexts/ToastContext';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { ToastContainer } from './components/ui/Toast';
 import { Auth } from './pages/Auth';
 import { Dashboard } from './pages/Dashboard';
@@ -51,8 +52,10 @@ const App = () => {
       <ToastProvider>
         <AuthProvider>
           <HashRouter>
+            <ErrorBoundary>
               <AppRoutes />
-              <ToastContainer />
+            </ErrorBoundary>
+            <ToastContainer />
           </HashRouter>
         </AuthProvider>
       </ToastProvider>

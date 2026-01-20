@@ -7,6 +7,8 @@
 ## [Unreleased]
 
 ### Added
+- Global `ErrorBoundary` component with dual-theme support (`Glassmorphism`/`Neobrutalism`) to prevent white screen of death.
+- Recovery options for users when errors occur ("Try Again" and "Back to Home").
 - Inline form validation in Auth page with real-time feedback and proper ARIA accessibility support (`aria-invalid`, `aria-describedby`, `role="alert"`).
 - Dashboard skeleton loading state (`DashboardSkeleton`) to improve perceived performance during data fetch.
 - Comprehensive `EmptyState` component for Groups and Friends pages to better guide new users.
