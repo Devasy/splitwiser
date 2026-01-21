@@ -87,6 +87,33 @@ colors: {
 
 ## Component Patterns
 
+### Error Boundary Pattern
+
+**Date:** 2026-01-14
+**Context:** Implementing global error handling
+
+React Error Boundaries must be class components to use `componentDidCatch`. However, to use hooks (like `useTheme` or `useNavigate`), you should split the fallback UI into a separate functional component.
+
+```tsx
+// 1. Functional Fallback (uses hooks)
+const ErrorFallback = ({ error, resetErrorBoundary }) => {
+  const { style } = useTheme();
+  return <div className={style...}>...</div>;
+}
+
+// 2. Class Boundary (handles logic)
+class ErrorBoundary extends Component {
+  render() {
+    if (this.state.hasError) {
+      return <ErrorFallback ... />;
+    }
+    return this.props.children;
+  }
+}
+```
+
+**Testing Tip:** React Error Boundaries do **not** catch errors in event handlers. To verify them, you must throw inside the `render` method (e.g., `if (shouldThrow) throw new Error()`).
+
 ### Button Component Variants
 
 **Date:** 2026-01-01
@@ -458,6 +485,30 @@ _Document errors and their solutions here as you encounter them._
 ---
 
 ## Recent Implementation Reviews
+
+### ✅ Successful PR Pattern: Error Boundary (#240)
+
+**Date:** 2026-01-14
+**Context:** Implementing global error handling
+
+**What was implemented:**
+1. Created `ErrorBoundary.tsx` with class component + functional fallback.
+2. Wrapped `AppRoutes` in `App.tsx` with `ErrorBoundary`.
+3. Styled fallback UI for both Neobrutalism and Glassmorphism.
+4. Added "Retry" and "Go Home" options.
+
+**Why it succeeded:**
+- ✅ Complete system (Component + Integration + Styling).
+- ✅ Solved "React Hooks inside Class Component" by splitting logic.
+- ✅ Verified using a temporary render-phase throw (not event handler).
+- ✅ Maintained dual-theme support.
+
+**Key learnings:**
+- Error Boundaries only catch errors in Render/Lifecycle, NOT event handlers.
+- Verification requires triggering an error during render (e.g., conditional throw).
+- Must wrap Router if using `useNavigate` or `Link` in fallback.
+
+---
 
 ### ✅ Successful PR Pattern: Toast Notification System (#227)
 
