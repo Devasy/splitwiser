@@ -43,7 +43,7 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="modal-title">
           <motion.div
             variants={overlayVariants}
             initial="hidden"
@@ -64,8 +64,8 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
           >
             {/* Header */}
             <div className={`p-6 flex justify-between items-center ${style === THEMES.NEOBRUTALISM ? 'border-b-2 border-black bg-neo-main text-white' : 'border-b border-white/10 bg-white/5'}`}>
-              <h3 className={`text-2xl font-bold ${style === THEMES.NEOBRUTALISM ? 'uppercase font-mono tracking-tighter' : ''}`}>{title}</h3>
-              <button onClick={onClose} className="hover:rotate-90 transition-transform duration-200">
+              <h3 id="modal-title" className={`text-2xl font-bold ${style === THEMES.NEOBRUTALISM ? 'uppercase font-mono tracking-tighter' : ''}`}>{title}</h3>
+              <button onClick={onClose} className="hover:rotate-90 transition-transform duration-200" aria-label="Close modal">
                 <X size={24} />
               </button>
             </div>
