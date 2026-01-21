@@ -7,6 +7,11 @@
 ## [Unreleased]
 
 ### Added
+- **Error Boundary System**: Added `ErrorBoundary` component to catch React errors gracefully.
+  - Displays a user-friendly error card with "Try Again" and "Home" actions.
+  - Supports both Glassmorphism and Neobrutalism themes.
+  - Shows stack trace in development mode.
+  - Wraps `AppRoutes` to prevent white screen of death on route errors.
 - Inline form validation in Auth page with real-time feedback and proper ARIA accessibility support (`aria-invalid`, `aria-describedby`, `role="alert"`).
 - Dashboard skeleton loading state (`DashboardSkeleton`) to improve perceived performance during data fetch.
 - Comprehensive `EmptyState` component for Groups and Friends pages to better guide new users.

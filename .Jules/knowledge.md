@@ -87,6 +87,33 @@ colors: {
 
 ## Component Patterns
 
+### Error Boundary Pattern
+
+**Date:** 2026-01-14
+**Context:** Implemented `ErrorBoundary` in `web/components/ErrorBoundary.tsx`
+
+React Error Boundaries must be class components. However, to use hooks (like `useTheme`), you should split the UI into a functional component (`ErrorFallback`) and render it from the class component.
+
+```tsx
+// Functional component for UI (can use hooks)
+const ErrorFallback = ({ error, resetErrorBoundary }) => {
+  const { style } = useTheme(); // Hooks work here
+  return <ThemeWrapper>...</ThemeWrapper>;
+};
+
+// Class component for logic
+class ErrorBoundary extends Component {
+  // ...
+  render() {
+    if (this.state.hasError) {
+      return <ErrorFallback ... />;
+    }
+    return this.props.children;
+  }
+}
+```
+**Key Learning:** Wrap `ErrorFallback` in `ThemeWrapper` so the error page inherits the correct background and theme context.
+
 ### Button Component Variants
 
 **Date:** 2026-01-01
