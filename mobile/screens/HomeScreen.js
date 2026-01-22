@@ -1,5 +1,6 @@
 import { useContext, useEffect, useState } from "react";
 import { Alert, FlatList, StyleSheet, View } from "react-native";
+import * as Haptics from "expo-haptics";
 import {
   ActivityIndicator,
   Appbar,
@@ -19,6 +20,7 @@ const HomeScreen = ({ navigation }) => {
   const { token, logout, user } = useContext(AuthContext);
   const [groups, setGroups] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [groupSettlements, setGroupSettlements] = useState({}); // Track settlement status for each group
 
   // State for the Create Group modal
@@ -66,9 +68,15 @@ const HomeScreen = ({ navigation }) => {
     }
   };
 
-  const fetchGroups = async () => {
+  const fetchGroups = async (refresh = false) => {
     try {
-      setIsLoading(true);
+      if (refresh) {
+        setIsRefreshing(true);
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      } else {
+        setIsLoading(true);
+      }
+
       const response = await getGroups();
       const groupsList = response.data.groups;
       setGroups(groupsList);
@@ -92,12 +100,13 @@ const HomeScreen = ({ navigation }) => {
       Alert.alert("Error", "Failed to fetch groups.");
     } finally {
       setIsLoading(false);
+      setIsRefreshing(false);
     }
   };
 
   useEffect(() => {
     if (token) {
-      fetchGroups();
+      fetchGroups(false);
     }
   }, [token]);
 
@@ -111,7 +120,7 @@ const HomeScreen = ({ navigation }) => {
       await createGroup(newGroupName);
       hideModal();
       setNewGroupName("");
-      await fetchGroups(); // Refresh the groups list
+      await fetchGroups(true); // Refresh the groups list
     } catch (error) {
       console.error("Failed to create group:", error);
       Alert.alert("Error", "Failed to create group.");
@@ -226,7 +235,9 @@ const HomeScreen = ({ navigation }) => {
         <Appbar.Action
           icon="account-plus"
           onPress={() =>
-            navigation.navigate("JoinGroup", { onGroupJoined: fetchGroups })
+            navigation.navigate("JoinGroup", {
+              onGroupJoined: () => fetchGroups(true),
+            })
           }
         />
       </Appbar.Header>
@@ -246,8 +257,8 @@ const HomeScreen = ({ navigation }) => {
               No groups found. Create or join one!
             </Text>
           }
-          onRefresh={fetchGroups}
-          refreshing={isLoading}
+          onRefresh={() => fetchGroups(true)}
+          refreshing={isRefreshing}
         />
       )}
     </View>
