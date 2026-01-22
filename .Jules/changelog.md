@@ -7,6 +7,13 @@
 ## [Unreleased]
 
 ### Added
+- **Mobile Pull-to-Refresh with Haptics:** Implemented native pull-to-refresh functionality for HomeScreen and GroupDetailsScreen.
+  - **Features:**
+    - Integrated `expo-haptics` for tactile feedback during refresh.
+    - Separated `isLoading` (initial load) from `isRefreshing` (pull actions) to prevent content flashing.
+    - Ensured lists remain visible while refreshing.
+  - **Technical:** Refactored `fetchGroups` and `fetchData` to accept refresh flags and manage state independently.
+
 - **Error Boundary System:** Implemented a global React Error Boundary to catch render errors gracefully.
   - **Features:**
     - Dual-theme support (Glassmorphism & Neobrutalism) for the error fallback UI.

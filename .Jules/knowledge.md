@@ -270,6 +270,44 @@ Commonly used components:
 
 Most screens use `<View style={{ flex: 1 }}>` - consider wrapping in `SafeAreaView` for notched devices.
 
+### Mobile List Refresh Pattern
+
+**Date:** 2026-01-14
+**Context:** Implementing Pull-to-Refresh in React Native
+
+When implementing `RefreshControl` on a `FlatList`, you must separate the **initial loading state** from the **refreshing state** to avoid UI flashing.
+
+**Bad Pattern:**
+```javascript
+// Causes list to unmount and show spinner on refresh
+if (isLoading) return <ActivityIndicator />;
+<FlatList onRefresh={fetch} refreshing={isLoading} />
+```
+
+**Good Pattern:**
+```javascript
+const [isLoading, setIsLoading] = useState(true); // Initial load
+const [isRefreshing, setIsRefreshing] = useState(false); // Pull actions
+
+const fetchData = async (refresh = false) => {
+  if (refresh) setIsRefreshing(true);
+  else setIsLoading(true);
+  // ... fetch ...
+  setIsLoading(false);
+  setIsRefreshing(false);
+}
+
+// Only show full loader on initial mount
+if (isLoading) return <ActivityIndicator />;
+
+return (
+  <FlatList
+    onRefresh={() => fetchData(true)}
+    refreshing={isRefreshing} // List stays visible
+  />
+);
+```
+
 ---
 
 ## API Response Patterns

@@ -1,5 +1,6 @@
 import { useContext, useEffect, useState } from "react";
 import { Alert, FlatList, StyleSheet, Text, View } from "react-native";
+import * as Haptics from "expo-haptics";
 import {
   ActivityIndicator,
   Card,
@@ -22,6 +23,7 @@ const GroupDetailsScreen = ({ route, navigation }) => {
   const [expenses, setExpenses] = useState([]);
   const [settlements, setSettlements] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Currency configuration - can be made configurable later
   const currency = "₹"; // Default to INR, can be changed to '$' for USD
@@ -29,9 +31,14 @@ const GroupDetailsScreen = ({ route, navigation }) => {
   // Helper function to format currency amounts
   const formatCurrency = (amount) => `${currency}${amount.toFixed(2)}`;
 
-  const fetchData = async () => {
+  const fetchData = async (refresh = false) => {
     try {
-      setIsLoading(true);
+      if (refresh) {
+        setIsRefreshing(true);
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      } else {
+        setIsLoading(true);
+      }
       // Fetch members, expenses, and settlements in parallel
       const [membersResponse, expensesResponse, settlementsResponse] =
         await Promise.all([
@@ -47,6 +54,7 @@ const GroupDetailsScreen = ({ route, navigation }) => {
       Alert.alert("Error", "Failed to fetch group details.");
     } finally {
       setIsLoading(false);
+      setIsRefreshing(false);
     }
   };
 
@@ -61,7 +69,7 @@ const GroupDetailsScreen = ({ route, navigation }) => {
       ),
     });
     if (token && groupId) {
-      fetchData();
+      fetchData(false);
     }
   }, [token, groupId]);
 
@@ -202,6 +210,8 @@ const GroupDetailsScreen = ({ route, navigation }) => {
           <Text style={styles.emptyText}>No expenses recorded yet.</Text>
         }
         contentContainerStyle={{ paddingBottom: 80 }} // To avoid FAB overlap
+        onRefresh={() => fetchData(true)}
+        refreshing={isRefreshing}
       />
 
       <FAB
