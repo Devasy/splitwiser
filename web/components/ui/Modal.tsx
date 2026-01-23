@@ -53,6 +53,8 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
             onClick={onClose}
           />
           <motion.div
+            role="dialog"
+            aria-modal="true"
             variants={modalVariants}
             initial="hidden"
             animate="visible"

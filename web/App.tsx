@@ -3,6 +3,7 @@ import { HashRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { Layout } from './components/layout/Layout';
 import { ThemeWrapper } from './components/layout/ThemeWrapper';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { ConfirmProvider } from './contexts/ConfirmContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { ToastProvider } from './contexts/ToastContext';
 import { ToastContainer } from './components/ui/Toast';
@@ -50,14 +51,16 @@ const App = () => {
   return (
     <ThemeProvider>
       <ToastProvider>
-        <AuthProvider>
-          <HashRouter>
-              <ErrorBoundary>
-                <AppRoutes />
-              </ErrorBoundary>
-              <ToastContainer />
-          </HashRouter>
-        </AuthProvider>
+        <ConfirmProvider>
+          <AuthProvider>
+            <HashRouter>
+                <ErrorBoundary>
+                  <AppRoutes />
+                </ErrorBoundary>
+                <ToastContainer />
+            </HashRouter>
+          </AuthProvider>
+        </ConfirmProvider>
       </ToastProvider>
     </ThemeProvider>
   );

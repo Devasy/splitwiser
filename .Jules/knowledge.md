@@ -87,6 +87,38 @@ colors: {
 
 ## Component Patterns
 
+### Confirmation Dialog Pattern
+
+**Date:** 2026-01-23
+**Context:** replacing `window.confirm` with custom UI
+
+Use `ConfirmProvider` to allow promise-based confirmation without managing local state.
+
+```tsx
+// 1. Wrap App
+<ConfirmProvider>
+  <App />
+</ConfirmProvider>
+
+// 2. Use Hook
+const { confirm } = useConfirm();
+
+const handleDelete = async () => {
+  if (await confirm({
+    title: 'Delete?',
+    message: 'Sure?',
+    variant: 'danger'
+  })) {
+    // delete logic
+  }
+};
+```
+
+**Benefits:**
+- Cleaner code (no `isModalOpen` state).
+- Consistent UI across app.
+- Non-blocking (unlike `alert`), but easy to await.
+
 ### Error Boundary Pattern
 
 **Date:** 2026-01-14
@@ -176,7 +208,7 @@ When making a div clickable (like a card), you must ensure it's accessible:
 
 ### Modal Component Pattern
 
-**Date:** 2026-01-01
+**Date:** 2026-01-01 (Updated 2026-01-23)
 **Context:** Modal.tsx structure
 
 ```tsx
@@ -189,6 +221,8 @@ When making a div clickable (like a card), you must ensure it's accessible:
   {content}
 </Modal>
 ```
+
+**Accessibility Update:** Added `role="dialog"` and `aria-modal="true"` to the inner content wrapper to ensure screen readers announce it correctly.
 
 ### Toast Notification Pattern
 

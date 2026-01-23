@@ -77,12 +77,12 @@
   - Size: ~35 lines
   - Added: 2026-01-01
 
-- [ ] **[ux]** Confirmation dialog for destructive actions
-  - Files: Create `web/components/ui/ConfirmDialog.tsx`, integrate
-  - Context: Confirm before deleting groups/expenses
-  - Impact: Prevents accidental data loss
-  - Size: ~70 lines
-  - Added: 2026-01-01
+- [x] **[ux]** Confirmation dialog for destructive actions
+  - Completed: 2026-01-23
+  - Files: `web/components/ui/ConfirmDialog.tsx`, `web/contexts/ConfirmContext.tsx`, `web/pages/GroupDetails.tsx`
+  - Context: Replaced `window.confirm` with dual-theme accessible modal
+  - Impact: Prevents accidental data loss with native-feeling UI
+  - Size: ~100 lines
 
 ### Mobile
 

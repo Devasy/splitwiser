@@ -7,6 +7,14 @@
 ## [Unreleased]
 
 ### Added
+- **Confirmation Dialog System:** Replaced native `window.confirm` alerts with a custom, dual-theme accessible `ConfirmDialog`.
+  - **Features:**
+    - `ConfirmProvider` and `useConfirm` hook for easy integration.
+    - Promise-based API (`await confirm(...)`) allowing linear code flow.
+    - Dual-theme support (Glassmorphism & Neobrutalism).
+    - Accessibility improvements: Added `role="dialog"` to Modal component.
+  - **Technical:** Created `web/contexts/ConfirmContext.tsx` and `web/components/ui/ConfirmDialog.tsx`. Integrated into `web/App.tsx` and `web/pages/GroupDetails.tsx`.
+
 - **Error Boundary System:** Implemented a global React Error Boundary to catch render errors gracefully.
   - **Features:**
     - Dual-theme support (Glassmorphism & Neobrutalism) for the error fallback UI.
