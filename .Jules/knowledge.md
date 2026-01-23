@@ -486,6 +486,28 @@ _Document errors and their solutions here as you encounter them._
 
 ## Recent Implementation Reviews
 
+### ✅ Successful PR Pattern: Confirmation Dialog System
+
+**Date:** 2026-02-01
+**Context:** Replacing native alerts with custom UI
+
+**What was implemented:**
+1. **Context-based System:** `ConfirmContext` manages state and promise resolution, allowing `await confirm(...)`.
+2. **Accessible Component:** `ConfirmDialog` renders `Modal` with `role="dialog"` and `aria-modal="true"`.
+3. **Integration:** Replaced `window.confirm` in `GroupDetails.tsx`.
+
+**Why it succeeded:**
+- ✅ Complete system (Context + Component + Integration).
+- ✅ Accessible (fixed `Modal` roles).
+- ✅ Maintained dual-theme support.
+- ✅ Verified with Playwright.
+
+**Key learnings:**
+- `Modal` components must have `role="dialog"` and `aria-modal="true"` to be accessible and testable.
+- Promise-based context is the best pattern for replacing blocking `window.confirm`.
+
+---
+
 ### ✅ Successful PR Pattern: Error Boundary (#240)
 
 **Date:** 2026-01-14

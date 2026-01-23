@@ -8,6 +8,7 @@ import { Modal } from '../components/ui/Modal';
 import { Skeleton } from '../components/ui/Skeleton';
 import { THEMES } from '../constants';
 import { useAuth } from '../contexts/AuthContext';
+import { useConfirm } from '../contexts/ConfirmContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useToast } from '../contexts/ToastContext';
 import {
@@ -41,6 +42,7 @@ export const GroupDetails = () => {
     const { user } = useAuth();
     const { style } = useTheme();
     const { addToast } = useToast();
+    const confirm = useConfirm();
 
     const [group, setGroup] = useState<Group | null>(null);
     const [expenses, setExpenses] = useState<Expense[]>([]);
@@ -257,7 +259,13 @@ export const GroupDetails = () => {
 
     const handleDeleteExpense = async () => {
         if (!editingExpenseId || !id) return;
-        if (window.confirm("Are you sure you want to delete this expense?")) {
+
+        if (await confirm({
+            title: 'Delete Expense',
+            message: 'Are you sure you want to delete this expense? This cannot be undone.',
+            variant: 'danger',
+            confirmText: 'Delete'
+        })) {
             try {
                 await deleteExpense(id, editingExpenseId);
                 setIsExpenseModalOpen(false);
@@ -313,7 +321,13 @@ export const GroupDetails = () => {
 
     const handleDeleteGroup = async () => {
         if (!id) return;
-        if (window.confirm("Are you sure? This cannot be undone.")) {
+
+        if (await confirm({
+            title: 'Delete Group',
+            message: 'Are you sure? This cannot be undone.',
+            variant: 'danger',
+            confirmText: 'Delete Group'
+        })) {
             try {
                 await deleteGroup(id);
                 navigate('/groups');
@@ -326,7 +340,13 @@ export const GroupDetails = () => {
 
     const handleLeaveGroup = async () => {
         if (!id) return;
-        if (window.confirm("You can only leave when your balances are settled. Continue?")) {
+
+        if (await confirm({
+            title: 'Leave Group',
+            message: 'You can only leave when your balances are settled. Continue?',
+            variant: 'danger',
+            confirmText: 'Leave'
+        })) {
             try {
                 await leaveGroup(id);
                 addToast('You have left the group', 'success');
@@ -341,7 +361,12 @@ export const GroupDetails = () => {
         if (!id || !isAdmin) return;
         if (memberId === user?._id) return;
 
-        if (window.confirm(`Are you sure you want to remove ${memberName} from the group?`)) {
+        if (await confirm({
+            title: 'Remove Member',
+            message: `Are you sure you want to remove ${memberName} from the group?`,
+            variant: 'danger',
+            confirmText: 'Remove'
+        })) {
             try {
                 const hasUnsettled = settlements.some(
                     s => (s.fromUserId === memberId || s.toUserId === memberId) && (s.amount || 0) > 0

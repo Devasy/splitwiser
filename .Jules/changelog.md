@@ -7,6 +7,9 @@
 ## [Unreleased]
 
 ### Added
+- **Confirmation Dialog System:** Implemented a global confirmation dialog system to replace `window.confirm`.
+  - **Features:** Promise-based API (`useConfirm`), dual-theme support, "danger" variants, and full accessibility (`role="dialog"`).
+  - **Files:** `web/contexts/ConfirmContext.tsx`, `web/components/ui/ConfirmDialog.tsx`.
 - **Error Boundary System:** Implemented a global React Error Boundary to catch render errors gracefully.
   - **Features:**
     - Dual-theme support (Glassmorphism & Neobrutalism) for the error fallback UI.

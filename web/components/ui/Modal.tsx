@@ -57,6 +57,8 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
             initial="hidden"
             animate="visible"
             exit="exit"
+            role="dialog"
+            aria-modal="true"
             className={`relative w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh] 
               ${style === THEMES.NEOBRUTALISM
                 ? 'bg-white border-2 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] rounded-none'
