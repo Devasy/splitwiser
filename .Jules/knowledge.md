@@ -205,6 +205,29 @@ addToast('Message', 'success|error|info');
 - Auto-dismisses after 3 seconds
 - Stacks vertically in bottom-right
 
+### Confirmation Dialog Pattern
+
+**Date:** 2026-01-14
+**Context:** Replacing window.confirm with custom modal
+
+```tsx
+const { confirm } = useConfirm();
+
+// In async handler
+if (await confirm({
+  title: 'Delete Item',
+  message: 'Are you sure?',
+  variant: 'danger',
+  confirmText: 'Delete'
+})) {
+  // Proceed with deletion
+}
+```
+
+- Promise-based API avoids callback hell
+- Supports `danger` and `primary` variants
+- Fully accessible with `role="dialog"`
+
 ### Form Validation Pattern
 
 **Date:** 2026-01-01

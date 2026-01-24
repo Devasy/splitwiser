@@ -20,6 +20,7 @@
 - Comprehensive `EmptyState` component for Groups and Friends pages to better guide new users.
 - Toast notification system (`ToastContext`, `Toast` component) for providing non-blocking user feedback.
 - Keyboard navigation support for Groups page, enabling accessibility for power users.
+- Confirmation Dialog System (`ConfirmContext`, `ConfirmDialog`) replacing native browser alerts for destructive actions in `GroupDetails`.
 
 ### Changed
 - Updated JULES_PROMPT.md based on review of successful PRs:
