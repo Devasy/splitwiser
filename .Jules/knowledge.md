@@ -205,6 +205,30 @@ addToast('Message', 'success|error|info');
 - Auto-dismisses after 3 seconds
 - Stacks vertically in bottom-right
 
+### Confirmation Dialog Pattern
+
+**Date:** 2026-01-14
+**Context:** Replacing window.confirm with useConfirm
+
+```tsx
+const { confirm } = useConfirm();
+
+const handleDelete = async () => {
+  if (await confirm({
+    title: 'Are you sure?',
+    message: 'This cannot be undone.',
+    confirmText: 'Delete',
+    variant: 'danger'
+  })) {
+    // Proceed with deletion
+  }
+};
+```
+
+- **Asynchronous:** Returns a Promise resolving to `true` or `false`.
+- **Themed:** Matches global theme (Glass/Neo).
+- **Accessible:** Manages focus and ARIA roles.
+
 ### Form Validation Pattern
 
 **Date:** 2026-01-01

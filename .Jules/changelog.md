@@ -7,6 +7,14 @@
 ## [Unreleased]
 
 ### Added
+- **Confirmation Dialog System:** Replaced native `window.confirm` with a custom, accessible `ConfirmDialog`.
+  - **Features:**
+    - Dual-theme support matching the app's Neobrutalism and Glassmorphism styles.
+    - Asynchronous `useConfirm` hook pattern.
+    - Keyboard accessibility (Focus management, Escape to close).
+    - Integrated into `GroupDetails` for deleting expenses, groups, and removing members.
+  - **Technical:** Created `web/contexts/ConfirmContext.tsx` and `web/components/ui/ConfirmDialog.tsx`.
+
 - **Error Boundary System:** Implemented a global React Error Boundary to catch render errors gracefully.
   - **Features:**
     - Dual-theme support (Glassmorphism & Neobrutalism) for the error fallback UI.
