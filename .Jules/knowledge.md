@@ -245,6 +245,31 @@ const clearFieldError = (field: string) => {
 </form>
 ```
 
+### Confirmation Dialog Pattern
+
+**Date:** 2026-01-14
+**Context:** Replacing native `window.confirm`
+
+Use the `useConfirm` hook to trigger a modal confirmation.
+
+```tsx
+const { confirm } = useConfirm();
+
+const handleDelete = async () => {
+  const isConfirmed = await confirm({
+    title: 'Delete Item',
+    message: 'Are you sure?',
+    variant: 'danger', // or 'info'
+    confirmText: 'Delete',
+    cancelText: 'Cancel'
+  });
+
+  if (isConfirmed) {
+    await deleteItem();
+  }
+};
+```
+
 ---
 
 ## Mobile Patterns

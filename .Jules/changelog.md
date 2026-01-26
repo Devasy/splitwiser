@@ -7,6 +7,14 @@
 ## [Unreleased]
 
 ### Added
+- **Confirmation Dialog System:** Replaced native `window.confirm` with a custom, dual-theme `ConfirmDialog`.
+  - **Features:**
+    - Promise-based `useConfirm` hook for easy integration.
+    - Specialized "Danger" variant for destructive actions (red styling).
+    - Fully accessible (`role="alertdialog"`, focus management).
+    - Integrated into `GroupDetails` for deleting expenses, groups, and removing members.
+  - **Technical:** Created `web/contexts/ConfirmContext.tsx` and `web/components/ui/ConfirmDialog.tsx`.
+
 - **Error Boundary System:** Implemented a global React Error Boundary to catch render errors gracefully.
   - **Features:**
     - Dual-theme support (Glassmorphism & Neobrutalism) for the error fallback UI.
