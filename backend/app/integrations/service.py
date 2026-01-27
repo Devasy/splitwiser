@@ -253,6 +253,18 @@ class ImportService:
             )
             await self._update_checkpoint(import_job_id, "userImported", True)
 
+            # Create ID mapping for the importing user so they can be found during expense import
+            # This is critical - without this mapping, expenses paid by the importing user won't be imported
+            await self.id_mappings.insert_one(
+                {
+                    "importJobId": ObjectId(import_job_id),
+                    "entityType": "user",
+                    "splitwiseId": user_data["splitwiseId"],
+                    "splitwiserId": user_id,  # The current user's ID (already a string)
+                    "createdAt": datetime.now(timezone.utc),
+                }
+            )
+
             # Step 2: Import friends
             logger.info(f"Importing friends for job {import_job_id}")
             friends = client.get_friends()
@@ -269,7 +281,9 @@ class ImportService:
                 groups = [g for g in groups if str(g.getId()) in selected_ids]
                 logger.info(f"Filtered to {len(groups)} selected groups")
 
-            await self._import_groups(import_job_id, user_id, groups)
+            await self._import_groups(
+                import_job_id, user_id, user_data["splitwiseId"], groups
+            )
 
             # Step 4: Import expenses
             logger.info(f"Importing expenses for job {import_job_id}")
@@ -344,8 +358,17 @@ class ImportService:
             except Exception as e:
                 await self._record_error(import_job_id, "friend_import", str(e))
 
-    async def _import_groups(self, import_job_id: str, user_id: str, groups: List):
-        """Import groups with all members including unregistered ones."""
+    async def _import_groups(
+        self, import_job_id: str, user_id: str, user_splitwise_id: str, groups: List
+    ):
+        """Import groups with all members including unregistered ones.
+
+        Args:
+            import_job_id: The import job ID
+            user_id: The Splitwiser user ID (MongoDB ObjectId as string)
+            user_splitwise_id: The importing user's Splitwise ID
+            groups: List of Splitwise group objects
+        """
         for group in groups:
             try:
                 group_data = SplitwiseClient.transform_group(group)
@@ -364,16 +387,16 @@ class ImportService:
 
                     if mapping:
                         # Registered user - use their Splitwiser ID as string
+                        # Check if this is the importing user by comparing Splitwise IDs
+                        is_importing_user = str(member["splitwiseUserId"]) == str(
+                            user_splitwise_id
+                        )
                         mapped_members.append(
                             {
                                 "userId": mapping[
                                     "splitwiserId"
                                 ],  # Already a string from mapping
-                                "role": (
-                                    "admin"
-                                    if str(member["splitwiseUserId"]) == str(user_id)
-                                    else "member"
-                                ),
+                                "role": "admin" if is_importing_user else "member",
                                 "joinedAt": datetime.now(timezone.utc),
                                 "isPlaceholder": False,
                             }
@@ -526,11 +549,16 @@ class ImportService:
         """Import expenses."""
         # Get all expenses
         all_expenses = client.get_expenses(limit=1000)
+        logger.info(
+            f"Fetched {len(all_expenses)} expenses from Splitwise for job {import_job_id}"
+        )
 
         await self._update_checkpoint(
             import_job_id, "expensesImported.total", len(all_expenses)
         )
 
+        imported_count = 0
+        skipped_count = 0
         for expense in all_expenses:
             try:
                 # Skip deleted expenses if option is set
@@ -555,6 +583,10 @@ class ImportService:
                 )
 
                 if not group_mapping:
+                    skipped_count += 1
+                    logger.debug(
+                        f"Skipping expense {expense_data.get('splitwiseExpenseId')} - no group mapping for group {expense_data.get('groupId')}"
+                    )
                     continue  # Skip if group not found
 
                 # Map user IDs in splits
@@ -589,18 +621,23 @@ class ImportService:
                 # Create expense
                 new_expense = {
                     "_id": ObjectId(),
-                    "groupId": ObjectId(group_mapping["splitwiserId"]),
-                    "createdBy": ObjectId(user_id),
+                    "groupId": group_mapping[
+                        "splitwiserId"
+                    ],  # String format for consistency
+                    "createdBy": user_id,  # String format
                     "paidBy": (
                         paid_by_mapping["splitwiserId"] if paid_by_mapping else user_id
                     ),
                     "description": expense_data["description"],
                     "amount": expense_data["amount"],
+                    "currency": expense_data.get("currency", "USD"),
                     "splits": mapped_splits,
                     "splitType": expense_data["splitType"],
-                    "tags": expense_data["tags"],
+                    "tags": expense_data.get("tags") or [],
                     "receiptUrls": (
-                        expense_data["receiptUrls"] if options.importReceipts else []
+                        expense_data.get("receiptUrls") or []
+                        if options.importReceipts
+                        else []
                     ),
                     "comments": [],
                     "history": [],
@@ -608,7 +645,9 @@ class ImportService:
                     "importedFrom": "splitwise",
                     "importedAt": datetime.now(timezone.utc),
                     "createdAt": (
-                        datetime.fromisoformat(expense_data["createdAt"])
+                        datetime.fromisoformat(
+                            expense_data["createdAt"].replace("Z", "+00:00")
+                        )
                         if expense_data.get("createdAt")
                         else datetime.now(timezone.utc)
                     ),
@@ -633,8 +672,15 @@ class ImportService:
                     import_job_id, "expensesImported.completed", 1, increment=True
                 )
 
+                imported_count += 1
+
             except Exception as e:
+                logger.error(f"Error importing expense: {e}")
                 await self._record_error(import_job_id, "expense_import", str(e))
+
+        logger.info(
+            f"Import completed: {imported_count} expenses imported, {skipped_count} skipped for job {import_job_id}"
+        )
 
     async def _update_checkpoint(
         self, import_job_id: str, field: str, value, increment: bool = False

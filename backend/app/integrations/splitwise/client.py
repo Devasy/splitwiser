@@ -122,17 +122,23 @@ class SplitwiseClient:
         """Transform Splitwise group to Splitwiser format."""
         members = []
         for member in group.getMembers() or []:
+            first_name = (
+                member.getFirstName() if hasattr(member, "getFirstName") else ""
+            )
+            last_name = member.getLastName() if hasattr(member, "getLastName") else ""
+            full_name = (
+                f"{first_name or ''} {last_name or ''}".strip() or "Unknown User"
+            )
+
             members.append(
                 {
                     "userId": str(member.getId()),
                     "splitwiseUserId": str(member.getId()),
-                    "firstName": (
-                        member.getFirstName() if hasattr(member, "getFirstName") else ""
-                    ),
-                    "lastName": (
-                        member.getLastName() if hasattr(member, "getLastName") else ""
-                    ),
+                    "name": full_name,
+                    "firstName": first_name,
+                    "lastName": last_name,
                     "email": member.getEmail() if hasattr(member, "getEmail") else None,
+                    "imageUrl": SplitwiseClient._get_member_image_url(member),
                     "role": "member",
                     "joinedAt": datetime.now(timezone.utc).isoformat(),
                 }
@@ -153,6 +159,17 @@ class SplitwiseClient:
             "importedFrom": "splitwise",
             "importedAt": datetime.now(timezone.utc).isoformat(),
         }
+
+    @staticmethod
+    def _get_member_image_url(member):
+        """Get member's profile picture URL."""
+        try:
+            picture = member.getPicture() if hasattr(member, "getPicture") else None
+            if picture and hasattr(picture, "getMedium"):
+                return picture.getMedium()
+        except Exception:
+            pass
+        return None
 
     @staticmethod
     def _safe_isoformat(date_value):
