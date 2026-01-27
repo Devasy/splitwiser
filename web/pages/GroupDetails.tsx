@@ -9,6 +9,7 @@ import { Modal } from '../components/ui/Modal';
 import { Skeleton } from '../components/ui/Skeleton';
 import { CURRENCIES, THEMES } from '../constants';
 import { useAuth } from '../contexts/AuthContext';
+import { useConfirm } from '../contexts/ConfirmContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useToast } from '../contexts/ToastContext';
 import {
@@ -42,6 +43,7 @@ export const GroupDetails = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const { user } = useAuth();
+    const { confirm } = useConfirm();
     const { style } = useTheme();
     const { addToast } = useToast();
 
@@ -405,7 +407,15 @@ export const GroupDetails = () => {
 
     const handleDeleteExpense = async () => {
         if (!editingExpenseId || !id) return;
-        if (window.confirm("Are you sure you want to delete this expense?")) {
+
+        const confirmed = await confirm({
+            title: 'Delete Expense',
+            description: 'Are you sure you want to delete this expense? This action cannot be undone.',
+            confirmText: 'Delete',
+            variant: 'danger'
+        });
+
+        if (confirmed) {
             try {
                 await deleteExpense(id, editingExpenseId);
                 setIsExpenseModalOpen(false);
@@ -464,7 +474,15 @@ export const GroupDetails = () => {
 
     const handleDeleteGroup = async () => {
         if (!id) return;
-        if (window.confirm("Are you sure? This cannot be undone.")) {
+
+        const confirmed = await confirm({
+            title: 'Delete Group',
+            description: 'Are you sure? This will permanently delete the group and all its expenses. This action cannot be undone.',
+            confirmText: 'Delete Group',
+            variant: 'danger'
+        });
+
+        if (confirmed) {
             try {
                 await deleteGroup(id);
                 navigate('/groups');
@@ -477,7 +495,15 @@ export const GroupDetails = () => {
 
     const handleLeaveGroup = async () => {
         if (!id) return;
-        if (window.confirm("You can only leave when your balances are settled. Continue?")) {
+
+        const confirmed = await confirm({
+            title: 'Leave Group',
+            description: 'You can only leave when your balances are settled. Are you sure you want to leave?',
+            confirmText: 'Leave',
+            variant: 'warning'
+        });
+
+        if (confirmed) {
             try {
                 await leaveGroup(id);
                 addToast('You have left the group', 'success');
@@ -492,15 +518,30 @@ export const GroupDetails = () => {
         if (!id || !isAdmin) return;
         if (memberId === user?._id) return;
 
-        if (window.confirm(`Are you sure you want to remove ${memberName} from the group?`)) {
+        const hasUnsettled = settlements.some(
+            s => (s.fromUserId === memberId || s.toUserId === memberId) && (s.amount || 0) > 0
+        );
+
+        if (hasUnsettled) {
+            await confirm({
+                title: 'Cannot Remove Member',
+                description: 'This member has unsettled balances in the group. Please settle all debts before removing them.',
+                confirmText: 'OK',
+                variant: 'info',
+                cancelText: 'Close'
+            });
+            return;
+        }
+
+        const confirmed = await confirm({
+            title: 'Remove Member',
+            description: `Are you sure you want to remove ${memberName} from the group?`,
+            confirmText: 'Remove',
+            variant: 'danger'
+        });
+
+        if (confirmed) {
             try {
-                const hasUnsettled = settlements.some(
-                    s => (s.fromUserId === memberId || s.toUserId === memberId) && (s.amount || 0) > 0
-                );
-                if (hasUnsettled) {
-                    alert('Cannot remove: This member has unsettled balances in the group.');
-                    return;
-                }
                 await removeMember(id, memberId);
                 fetchData();
                 addToast(`Removed ${memberName} from group`, 'success');

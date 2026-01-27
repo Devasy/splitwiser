@@ -6,6 +6,9 @@ import { ToastContainer } from './components/ui/Toast';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { ToastProvider } from './contexts/ToastContext';
+import { ConfirmProvider } from './contexts/ConfirmContext';
+import { ToastContainer } from './components/ui/Toast';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { Auth } from './pages/Auth';
 import { Dashboard } from './pages/Dashboard';
 import { Friends } from './pages/Friends';
@@ -55,12 +58,16 @@ const App = () => {
   return (
     <ThemeProvider>
       <ToastProvider>
-        <AuthProvider>
-          <HashRouter>
-              <AppRoutes />
-              <ToastContainer />
-          </HashRouter>
-        </AuthProvider>
+        <ConfirmProvider>
+          <AuthProvider>
+            <HashRouter>
+                <ErrorBoundary>
+                  <AppRoutes />
+                </ErrorBoundary>
+                <ToastContainer />
+            </HashRouter>
+          </AuthProvider>
+        </ConfirmProvider>
       </ToastProvider>
     </ThemeProvider>
   );

@@ -87,6 +87,66 @@ colors: {
 
 ## Component Patterns
 
+### Confirmation Dialog System
+
+**Date:** 2026-01-21
+**Context:** Replacing window.confirm with accessible modal
+
+To handle destructive actions asynchronously while maintaining UI consistency:
+
+```tsx
+// 1. Setup in App
+<ConfirmProvider>
+  <App />
+</ConfirmProvider>
+
+// 2. Usage in Component
+const { confirm } = useConfirm();
+
+const handleDelete = async () => {
+  const result = await confirm({
+    title: 'Delete Item',
+    description: 'Are you sure?',
+    variant: 'danger', // danger | warning | info
+    confirmText: 'Delete'
+  });
+
+  if (result) {
+    await deleteItem();
+  }
+}
+```
+
+**Key Implementation Detail:**
+Uses a promise-based approach (`new Promise(resolve => ...)`) stored in state/ref to bridge the imperative `confirm()` call with the declarative React UI rendering.
+
+### Error Boundary Pattern
+
+**Date:** 2026-01-14
+**Context:** Implementing global error handling
+
+React Error Boundaries must be class components to use `componentDidCatch`. However, to use hooks (like `useTheme` or `useNavigate`), you should split the fallback UI into a separate functional component.
+
+```tsx
+// 1. Functional Fallback (uses hooks)
+const ErrorFallback = ({ error, resetErrorBoundary }) => {
+  const { style } = useTheme();
+  return <div className={style...}>...</div>;
+}
+
+// 2. Class Boundary (handles logic)
+class ErrorBoundary extends Component {
+  render() {
+    if (this.state.hasError) {
+      return <ErrorFallback ... />;
+    }
+    return this.props.children;
+  }
+}
+```
+
+**Testing Tip:** React Error Boundaries do **not** catch errors in event handlers. To verify them, you must throw inside the `render` method (e.g., `if (shouldThrow) throw new Error()`).
+
 ### Button Component Variants
 
 **Date:** 2026-01-01
@@ -162,6 +222,9 @@ When making a div clickable (like a card), you must ensure it's accessible:
   {content}
 </Modal>
 ```
+
+**Accessibility Update (2026-01-21):**
+Modals must include `role="dialog"`, `aria-modal="true"`, and `aria-labelledby="title-id"` on the overlay container to be properly detected by screen readers (and testing tools).
 
 ### Toast Notification Pattern
 
@@ -458,6 +521,53 @@ _Document errors and their solutions here as you encounter them._
 ---
 
 ## Recent Implementation Reviews
+
+### ✅ Successful PR Pattern: Confirmation Dialog System (#255)
+
+**Date:** 2026-01-21
+**Context:** Replacing native confirm dialogs with custom UI
+
+**What was implemented:**
+1. Created `ConfirmContext` using Promise pattern for async/await usage
+2. Created `ConfirmDialog` component wrapping existing `Modal`
+3. Enhanced `Modal` with proper ARIA attributes (`role="dialog"`, `aria-labelledby`)
+4. Replaced native `window.confirm` in `GroupDetails.tsx`
+
+**Why it succeeded:**
+- ✅ Improved UX (no more native browser alerts)
+- ✅ Improved Accessibility (Modal roles + keyboard support)
+- ✅ Maintained dual-theme support (Glass/Neo)
+- ✅ Clean integration via Context API (easy to use `const { confirm } = useConfirm()`)
+
+**Key learnings:**
+- Modals need explicit ARIA roles to be testable/accessible.
+- Promise-based context API allows keeping the call site logic simple (`if (await confirm()) ...`).
+
+---
+
+### ✅ Successful PR Pattern: Error Boundary (#240)
+
+**Date:** 2026-01-14
+**Context:** Implementing global error handling
+
+**What was implemented:**
+1. Created `ErrorBoundary.tsx` with class component + functional fallback.
+2. Wrapped `AppRoutes` in `App.tsx` with `ErrorBoundary`.
+3. Styled fallback UI for both Neobrutalism and Glassmorphism.
+4. Added "Retry" and "Go Home" options.
+
+**Why it succeeded:**
+- ✅ Complete system (Component + Integration + Styling).
+- ✅ Solved "React Hooks inside Class Component" by splitting logic.
+- ✅ Verified using a temporary render-phase throw (not event handler).
+- ✅ Maintained dual-theme support.
+
+**Key learnings:**
+- Error Boundaries only catch errors in Render/Lifecycle, NOT event handlers.
+- Verification requires triggering an error during render (e.g., conditional throw).
+- Must wrap Router if using `useNavigate` or `Link` in fallback.
+
+---
 
 ### ✅ Successful PR Pattern: Toast Notification System (#227)
 

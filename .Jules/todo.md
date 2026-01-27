@@ -34,12 +34,19 @@
   - Impact: Guides new users, makes app feel polished
   - Size: ~70 lines
 
-- [ ] **[ux]** Error boundary with retry for API failures
-  - Files: Create `web/components/ErrorBoundary.tsx`, wrap app
+- [x] **[ux]** Error boundary with retry for API failures
+  - Completed: 2026-01-14
+  - Files: Created `web/components/ErrorBoundary.tsx`, wrapped app
   - Context: Catch errors gracefully with retry button
   - Impact: App doesn't crash, users can recover
-  - Size: ~60 lines
-  - Added: 2026-01-01
+  - Size: ~80 lines
+
+- [x] **[ux]** Confirmation dialog for destructive actions
+  - Completed: 2026-01-21
+  - Files: Created `web/components/ui/ConfirmDialog.tsx`, `web/contexts/ConfirmContext.tsx`, `web/components/ui/Modal.tsx`
+  - Context: Replaced window.confirm with custom accessible modal system
+  - Impact: Prevents accidental data loss, matches app theme, improves accessibility
+  - Size: ~100 lines
 
 ### Mobile
 
@@ -75,13 +82,6 @@
   - Context: Ensure all buttons have proper hover + focus-visible styles
   - Impact: Professional feel, keyboard users know where they are
   - Size: ~35 lines
-  - Added: 2026-01-01
-
-- [ ] **[ux]** Confirmation dialog for destructive actions
-  - Files: Create `web/components/ui/ConfirmDialog.tsx`, integrate
-  - Context: Confirm before deleting groups/expenses
-  - Impact: Prevents accidental data loss
-  - Size: ~70 lines
   - Added: 2026-01-01
 
 ### Mobile
@@ -154,5 +154,9 @@
   - Completed: 2026-01-11
   - Files modified: `web/pages/Auth.tsx`
   - Impact: Users know immediately if input is valid via inline error messages and red borders.
+- [x] **[ux]** Error boundary with retry for API failures
+  - Completed: 2026-01-14
+  - Files modified: `web/components/ErrorBoundary.tsx`, `web/App.tsx`
+  - Impact: App doesn't crash, users can recover
 
 _No tasks completed yet. Move tasks here after completion._
