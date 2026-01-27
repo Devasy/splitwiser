@@ -41,6 +41,13 @@
   - Impact: App doesn't crash, users can recover
   - Size: ~80 lines
 
+- [x] **[ux]** Confirmation dialog for destructive actions
+  - Completed: 2026-01-21
+  - Files: Created `web/components/ui/ConfirmDialog.tsx`, `web/contexts/ConfirmContext.tsx`, `web/components/ui/Modal.tsx`
+  - Context: Replaced window.confirm with custom accessible modal system
+  - Impact: Prevents accidental data loss, matches app theme, improves accessibility
+  - Size: ~100 lines
+
 ### Mobile
 
 - [ ] **[ux]** Pull-to-refresh with haptic feedback on all list screens
@@ -75,13 +82,6 @@
   - Context: Ensure all buttons have proper hover + focus-visible styles
   - Impact: Professional feel, keyboard users know where they are
   - Size: ~35 lines
-  - Added: 2026-01-01
-
-- [ ] **[ux]** Confirmation dialog for destructive actions
-  - Files: Create `web/components/ui/ConfirmDialog.tsx`, integrate
-  - Context: Confirm before deleting groups/expenses
-  - Impact: Prevents accidental data loss
-  - Size: ~70 lines
   - Added: 2026-01-01
 
 ### Mobile
