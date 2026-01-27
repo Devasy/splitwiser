@@ -70,13 +70,21 @@ async def list_group_expenses(
     from_date: Optional[datetime] = Query(None, alias="from"),
     to_date: Optional[datetime] = Query(None, alias="to"),
     tags: Optional[str] = Query(None),
+    search: Optional[str] = Query(None, description="Search in description or tags"),
     current_user: Dict[str, Any] = Depends(get_current_user),
 ):
     """List all expenses for a group with pagination and filtering"""
     try:
         tag_list = tags.split(",") if tags else None
         result = await expense_service.list_group_expenses(
-            group_id, current_user["_id"], page, limit, from_date, to_date, tag_list
+            group_id,
+            current_user["_id"],
+            page,
+            limit,
+            from_date,
+            to_date,
+            tag_list,
+            search,
         )
         return result
     except ValueError as e:
@@ -444,9 +452,9 @@ async def get_user_balance_in_specific_group(
 async def group_expense_analytics(
     group_id: str,
     period: str = Query(
-        "month", description="Analytics period: 'week', 'month', 'year'"
+        "month", description="Analytics period: 'month', '6months', 'year'"
     ),
-    year: int = Query(...),
+    year: Optional[int] = Query(None),
     month: Optional[int] = Query(None),
     current_user: Dict[str, Any] = Depends(get_current_user),
 ):
