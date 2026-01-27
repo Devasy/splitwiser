@@ -299,6 +299,25 @@ Commonly used components:
 - `<Portal>` and `<Modal>` for overlays
 - `<ActivityIndicator>` for loading states
 
+### Skeleton Loading Pattern (Mobile)
+
+**Date:** 2026-01-22
+**Context:** Creating loading states for lists
+
+Use `Animated` API combined with `react-native-paper` theme colors:
+
+```javascript
+const theme = useTheme();
+const opacity = useRef(new Animated.Value(0.3)).current;
+const color = theme.colors.surfaceVariant; // Adapt to theme
+
+Animated.loop(...).start();
+
+return (
+  <Animated.View style={{ opacity, backgroundColor: color }} />
+);
+```
+
 ### Safe Area Pattern
 
 **Date:** 2026-01-01
