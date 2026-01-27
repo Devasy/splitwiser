@@ -26,15 +26,15 @@ export interface Group {
 
 export interface GroupMember {
   userId: string;
-  role: 'admin' | 'member';
+  role: "admin" | "member";
   joinedAt: string;
   user?: User; // Details populated
 }
 
 export enum SplitType {
-  EQUAL = 'equal',
-  UNEQUAL = 'unequal',
-  PERCENTAGE = 'percentage'
+  EQUAL = "equal",
+  UNEQUAL = "unequal",
+  PERCENTAGE = "percentage",
 }
 
 export interface ExpenseSplit {
@@ -63,14 +63,14 @@ export interface Settlement {
   payerName: string;
   payeeName: string;
   amount: number;
-  status: 'pending' | 'completed' | 'cancelled';
+  status: "pending" | "completed" | "cancelled";
   description?: string;
 }
 
 export interface GroupBalanceSummary {
-  groupId: string;
-  groupName: string;
-  amount: number; // Positive = owed to you, Negative = you owe
+  group_id: string;
+  group_name: string;
+  yourBalanceInGroup: number; // Positive = owed to you, Negative = you owe
 }
 
 export interface BalanceSummary {
@@ -81,12 +81,21 @@ export interface BalanceSummary {
   groupsSummary: GroupBalanceSummary[];
 }
 
+export interface FriendBalanceBreakdown {
+  groupId: string;
+  groupName: string;
+  balance: number;
+  owesYou: boolean;
+}
+
 export interface FriendBalance {
-  friendId: string;
+  userId: string;
   userName: string;
+  userImageUrl?: string;
   netBalance: number;
-  owedToYou: number;
-  youOwe: number;
+  owesYou: boolean;
+  breakdown: FriendBalanceBreakdown[];
+  lastActivity: string;
 }
 
 export interface CategorySpending {
@@ -117,6 +126,9 @@ export interface GroupAnalytics {
   avgExpenseAmount: number;
   topCategories: CategorySpending[];
   memberContributions: MemberContribution[];
-  contributionTimeline?: Array<{ date: string;[memberName: string]: number | string }>;
+  contributionTimeline?: Array<{
+    date: string;
+    [memberName: string]: number | string;
+  }>;
   expenseTrends: ExpenseTrend[];
 }

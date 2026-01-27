@@ -54,8 +54,8 @@ async def fix_split_types():
     """Fix split types for all existing expenses."""
     client = None
     try:
-        # Connect to MongoDB
-        logger.info(f"Connecting to MongoDB at {settings.mongodb_url}")
+        # Connect to MongoDB (URL redacted for security)
+        logger.info("Connecting to MongoDB...")
         client = AsyncIOMotorClient(settings.mongodb_url)
         db = client[settings.database_name]
         expenses_collection = db["expenses"]
@@ -141,8 +141,9 @@ async def verify_migration():
             expected_type = detect_split_type(splits)
             match = "✓" if current_type == expected_type else "✗"
 
+            desc = (expense.get("description") or "")[:30]
             logger.info(
-                f"   {match} {expense.get('description')[:30]:30} | "
+                f"   {match} {desc:30} | "
                 f"Type: {current_type:10} | Expected: {expected_type}"
             )
 

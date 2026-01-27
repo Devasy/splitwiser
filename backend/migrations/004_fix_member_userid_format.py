@@ -31,8 +31,8 @@ async def fix_member_userid_format():
     """Convert members.userId from ObjectId to string and add missing fields"""
     client = None
     try:
-        # Connect to MongoDB
-        logger.info(f"Connecting to MongoDB at {settings.mongodb_url}")
+        # Connect to MongoDB (URL redacted for security)
+        logger.info("Connecting to MongoDB...")
         client = AsyncIOMotorClient(settings.mongodb_url)
         db = client[settings.database_name]
         groups_collection = db["groups"]

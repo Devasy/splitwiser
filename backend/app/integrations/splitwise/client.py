@@ -51,7 +51,7 @@ class SplitwiseClient:
         Returns:
             List of expense objects
         """
-        if group_id:
+        if group_id is not None:
             return self.sObj.getExpenses(group_id=group_id, limit=limit)
         return self.sObj.getExpenses(limit=limit)
 
