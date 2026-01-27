@@ -7,6 +7,8 @@
 ## [Unreleased]
 
 ### Added
+- Global `ErrorBoundary` system with `ErrorFallback` UI that adapts to both Neobrutalism and Glassmorphism themes.
+- Retry mechanism in `ErrorBoundary` to allow users to recover from runtime errors without refreshing.
 - Inline form validation in Auth page with real-time feedback and proper ARIA accessibility support (`aria-invalid`, `aria-describedby`, `role="alert"`).
 - Dashboard skeleton loading state (`DashboardSkeleton`) to improve perceived performance during data fetch.
 - Comprehensive `EmptyState` component for Groups and Friends pages to better guide new users.
