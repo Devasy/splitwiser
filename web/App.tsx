@@ -14,6 +14,9 @@ import { Friends } from './pages/Friends';
 import { GroupDetails } from './pages/GroupDetails';
 import { Groups } from './pages/Groups';
 import { Profile } from './pages/Profile';
+import { SplitwiseCallback } from './pages/SplitwiseCallback';
+import { SplitwiseGroupSelection } from './pages/SplitwiseGroupSelection';
+import { SplitwiseImport } from './pages/SplitwiseImport';
 
 // Protected Route Wrapper
 const ProtectedRoute = ({ children }: { children: React.ReactElement }) => {
@@ -41,6 +44,9 @@ const AppRoutes = () => {
           <Route path="/groups/:id" element={<ProtectedRoute><GroupDetails /></ProtectedRoute>} />
           <Route path="/friends" element={<ProtectedRoute><Friends /></ProtectedRoute>} />
           <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+          <Route path="/import/splitwise" element={<ProtectedRoute><SplitwiseImport /></ProtectedRoute>} />
+          <Route path="/import/splitwise/select-groups" element={<ProtectedRoute><SplitwiseGroupSelection /></ProtectedRoute>} />
+          <Route path="/import/splitwise/callback" element={<ProtectedRoute><SplitwiseCallback /></ProtectedRoute>} />
           
           <Route path="*" element={<Navigate to={isAuthenticated ? "/dashboard" : "/login"} />} />
         </Routes>

@@ -54,6 +54,12 @@ const AccountScreen = ({ navigation }) => {
           />
           <Divider />
           <List.Item
+            title="Import from Splitwise"
+            left={() => <List.Icon icon="import" />}
+            onPress={() => navigation.navigate("SplitwiseImport")}
+          />
+          <Divider />
+          <List.Item
             title="Logout"
             left={() => <List.Icon icon="logout" />}
             onPress={handleLogout}

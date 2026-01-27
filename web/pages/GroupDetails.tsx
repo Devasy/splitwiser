@@ -1,12 +1,13 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowRight, Banknote, Check, Copy, DollarSign, Hash, Layers, LogOut, PieChart, Plus, Receipt, Settings, Share2, Trash2, UserMinus } from 'lucide-react';
+import { ArrowRight, Banknote, Check, Copy, DollarSign, Hash, Layers, LogOut, PieChart, Plus, Receipt, Search, Settings, Share2, Trash2, UserMinus } from 'lucide-react';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { AnalyticsContent } from '../components/AnalyticsContent';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Modal } from '../components/ui/Modal';
 import { Skeleton } from '../components/ui/Skeleton';
-import { THEMES } from '../constants';
+import { CURRENCIES, THEMES } from '../constants';
 import { useAuth } from '../contexts/AuthContext';
 import { useConfirm } from '../contexts/ConfirmContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -17,6 +18,7 @@ import {
     deleteExpense,
     deleteGroup,
     getExpenses,
+    getGroupAnalytics,
     getGroupDetails,
     getGroupMembers,
     getOptimizedSettlements,
@@ -24,7 +26,8 @@ import {
     updateExpense,
     updateGroup
 } from '../services/api';
-import { Expense, Group, GroupMember, SplitType } from '../types';
+import { Expense, Group, GroupAnalytics, GroupMember, SplitType } from '../types';
+import { formatCurrency } from '../utils/formatters';
 
 type UnequalMode = 'amount' | 'percentage' | 'shares';
 
@@ -46,10 +49,23 @@ export const GroupDetails = () => {
 
     const [group, setGroup] = useState<Group | null>(null);
     const [expenses, setExpenses] = useState<Expense[]>([]);
+    const [totalSummary, setTotalSummary] = useState<any>(null); // Summary for ALL expenses in group
     const [members, setMembers] = useState<GroupMember[]>([]);
     const [settlements, setSettlements] = useState<Settlement[]>([]);
     const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState<'expenses' | 'settlements'>('expenses');
+    const [activeTab, setActiveTab] = useState<'expenses' | 'settlements' | 'analytics'>('expenses');
+
+    // Search and Filter State
+    const [searchQuery, setSearchQuery] = useState('');
+    const [analytics, setAnalytics] = useState<GroupAnalytics | null>(null);
+    const [timeframe, setTimeframe] = useState<'month' | '6months' | 'year'>('month');
+    const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+    const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
+
+    // Pagination State
+    const [page, setPage] = useState(1);
+    const [hasMore, setHasMore] = useState(true);
+    const [loadingMore, setLoadingMore] = useState(false);
 
     // Modals
     const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
@@ -74,6 +90,7 @@ export const GroupDetails = () => {
 
     // Group Settings State
     const [editGroupName, setEditGroupName] = useState('');
+    const [editGroupCurrency, setEditGroupCurrency] = useState('USD');
     const [settingsTab, setSettingsTab] = useState<'info' | 'members' | 'danger'>('info');
     const [copied, setCopied] = useState(false);
 
@@ -82,6 +99,39 @@ export const GroupDetails = () => {
         const me = members.find(m => m.userId === user?._id);
         return me?.role === 'admin';
     }, [members, user?._id]);
+
+    // Calculate group totals using totalSummary (for ALL expenses, not filtered)
+    const groupTotals = useMemo(() => {
+        if (!totalSummary) {
+            // Fallback to calculating from current expenses if totalSummary not available yet
+            const totalSpent = expenses.reduce((sum, e) => sum + e.amount, 0);
+            const myContribution = expenses
+                .filter(e => e.paidBy === user?._id)
+                .reduce((sum, e) => sum + e.amount, 0);
+            const myShare = expenses.reduce((sum, e) => {
+                const mySplit = e.splits.find(s => s.userId === user?._id);
+                return sum + (mySplit?.amount || 0);
+            }, 0);
+            const netBalance = myContribution - myShare;
+
+            return {
+                totalSpent,
+                myContribution,
+                myShare,
+                netBalance,
+                expenseCount: expenses.length
+            };
+        }
+
+        // Use totalSummary from backend (includes ALL expenses)
+        return {
+            totalSpent: totalSummary.totalAmount || 0,
+            myContribution: 0, // This would need to be added to backend summary
+            myShare: 0, // This would need to be added to backend summary
+            netBalance: 0, // This would need to be added to backend summary
+            expenseCount: totalSummary.expenseCount || 0
+        };
+    }, [totalSummary, expenses, user?._id]);
 
     useEffect(() => {
         if (id) fetchData();
@@ -102,7 +152,25 @@ export const GroupDetails = () => {
                 if (other) setPaymentPayeeId(other.userId);
             }
         }
-    }, [members, group, user, editingExpenseId]);
+    }, [members, group, user, editingExpenseId, payerId, paymentPayerId, paymentPayeeId]);
+
+    // Search with debounce
+    const [debouncedSearch, setDebouncedSearch] = useState('');
+
+    useEffect(() => {
+        const handler = setTimeout(() => {
+            setDebouncedSearch(searchQuery);
+        }, 300); // 300ms debounce
+
+        return () => clearTimeout(handler);
+    }, [searchQuery]);
+
+    // Refetch when search changes
+    useEffect(() => {
+        if (id && !loading) {
+            fetchData();
+        }
+    }, [debouncedSearch]);
 
     const fetchData = async () => {
         if (!id) return;
@@ -110,21 +178,100 @@ export const GroupDetails = () => {
         try {
             const [groupRes, expRes, memRes, setRes] = await Promise.all([
                 getGroupDetails(id),
-                getExpenses(id),
+                getExpenses(id, 1, 20, debouncedSearch || undefined),
                 getGroupMembers(id),
                 getOptimizedSettlements(id)
             ]);
             setGroup(groupRes.data);
             setExpenses(expRes.data.expenses);
+            setPage(1);
+            setHasMore(expRes.data.pagination?.page < expRes.data.pagination?.totalPages);
             setMembers(memRes.data);
             setSettlements(setRes.data.optimizedSettlements);
             setEditGroupName(groupRes.data.name);
+            setEditGroupCurrency(groupRes.data.currency || 'USD');
+
+            // Store totalSummary separately
+            if (expRes.data.totalSummary) {
+                setTotalSummary(expRes.data.totalSummary);
+            }
         } catch (err) {
             console.error(err);
         } finally {
             setLoading(false);
         }
     };
+
+    const loadMoreExpenses = async () => {
+        if (!id || !hasMore || loadingMore) return;
+        setLoadingMore(true);
+        try {
+            const nextPage = page + 1;
+            const res = await getExpenses(id, nextPage);
+            setExpenses(prev => [...prev, ...res.data.expenses]);
+            setPage(nextPage);
+            setHasMore(res.data.pagination?.page < res.data.pagination?.totalPages);
+        } catch (err) {
+            console.error(err);
+            addToast("Failed to load more expenses", "error");
+        } finally {
+            setLoadingMore(false);
+        }
+    };
+
+    const fetchAnalytics = async () => {
+        if (!id) return;
+        try {
+            // For 6 months, don't pass month/year as backend handles it
+            if (timeframe === '6months') {
+                const res = await getGroupAnalytics(id, '6months', undefined, undefined);
+                setAnalytics(res.data);
+            } else if (timeframe === 'year') {
+                const res = await getGroupAnalytics(id, 'year', selectedYear, undefined);
+                setAnalytics(res.data);
+            } else {
+                // month - use selected year and month
+                const res = await getGroupAnalytics(id, 'month', selectedYear, selectedMonth);
+                setAnalytics(res.data);
+            }
+        } catch (err) {
+            console.error(err);
+            addToast("Failed to load analytics", "error");
+        }
+    };
+
+    // Fetch analytics when switching to analytics tab
+    useEffect(() => {
+        if (activeTab === 'analytics' && !analytics) {
+            fetchAnalytics();
+        }
+    }, [activeTab]);
+
+    // Refetch analytics when timeframe, year, or month changes
+    useEffect(() => {
+        if (activeTab === 'analytics' && analytics) {
+            fetchAnalytics();
+        }
+    }, [timeframe, selectedYear, selectedMonth]);
+
+    // Fetch settlements
+    const fetchSettlements = async () => {
+        if (!id) return;
+        try {
+            const res = await getOptimizedSettlements(id);
+            setSettlements(res.data.optimizedSettlements);
+        } catch (err) {
+            console.error(err);
+            addToast("Failed to load settlements", "error");
+        }
+    };
+
+    // Fetch settlements when switching to settlements tab
+    useEffect(() => {
+        if (activeTab === 'settlements') {
+            fetchSettlements();
+        }
+    }, [activeTab]);
 
     const copyToClipboard = () => {
         if (group?.joinCode) {
@@ -239,6 +386,7 @@ export const GroupDetails = () => {
             paidBy: payerId,
             splitType,
             splits: requestSplits,
+            currency,
         };
 
         try {
@@ -282,7 +430,7 @@ export const GroupDetails = () => {
     const handleRecordPayment = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!id) return;
-        
+
         const numAmount = parseFloat(paymentAmount);
         if (paymentPayerId === paymentPayeeId) {
             alert('Payer and payee cannot be the same');
@@ -292,7 +440,7 @@ export const GroupDetails = () => {
             alert('Please enter a valid amount');
             return;
         }
-        
+
         try {
             await createSettlement(id, {
                 payer_id: paymentPayerId,
@@ -312,9 +460,12 @@ export const GroupDetails = () => {
         e.preventDefault();
         if (!id) return;
         try {
-            await updateGroup(id, { name: editGroupName });
-            setIsSettingsModalOpen(false);
+            await updateGroup(id, {
+                name: editGroupName,
+                currency: editGroupCurrency
+            });
             fetchData();
+            setIsSettingsModalOpen(false);
             addToast('Group updated successfully!', 'success');
         } catch (err) {
             addToast("Failed to update group", 'error');
@@ -471,6 +622,34 @@ export const GroupDetails = () => {
                 </div>
             </motion.div>
 
+            {/* Group Totals Summary Cards */}
+            <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-5xl mx-auto"
+            >
+                <div className={`p-4 text-center ${style === THEMES.NEOBRUTALISM ? 'bg-white border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]' : 'bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10'}`}>
+                    <p className="text-xs font-bold opacity-50 uppercase tracking-wider">Total Spent</p>
+                    <p className="text-2xl font-black">{formatCurrency(groupTotals.totalSpent, group.currency)}</p>
+                    <p className="text-xs opacity-50">{groupTotals.expenseCount} expenses</p>
+                </div>
+                <div className={`p-4 text-center ${style === THEMES.NEOBRUTALISM ? 'bg-emerald-50 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]' : 'bg-emerald-500/10 backdrop-blur-sm rounded-2xl border border-emerald-500/20'}`}>
+                    <p className="text-xs font-bold opacity-50 uppercase tracking-wider">You Paid</p>
+                    <p className="text-2xl font-black text-emerald-600">{formatCurrency(groupTotals.myContribution, group.currency)}</p>
+                </div>
+                <div className={`p-4 text-center ${style === THEMES.NEOBRUTALISM ? 'bg-blue-50 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]' : 'bg-blue-500/10 backdrop-blur-sm rounded-2xl border border-blue-500/20'}`}>
+                    <p className="text-xs font-bold opacity-50 uppercase tracking-wider">Your Share</p>
+                    <p className="text-2xl font-black text-blue-600">{formatCurrency(groupTotals.myShare, group.currency)}</p>
+                </div>
+                <div className={`p-4 text-center ${style === THEMES.NEOBRUTALISM ? (groupTotals.netBalance >= 0 ? 'bg-emerald-100' : 'bg-red-100') + ' border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]' : (groupTotals.netBalance >= 0 ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-red-500/10 border-red-500/20') + ' backdrop-blur-sm rounded-2xl border'}`}>
+                    <p className="text-xs font-bold opacity-50 uppercase tracking-wider">Net Balance</p>
+                    <p className={`text-2xl font-black ${groupTotals.netBalance >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                        {groupTotals.netBalance >= 0 ? '+' : ''}{formatCurrency(groupTotals.netBalance, group.currency)}
+                    </p>
+                    <p className="text-xs opacity-50">{groupTotals.netBalance >= 0 ? 'owed to you' : 'you owe'}</p>
+                </div>
+            </motion.div>
+
             {/* Navigation Pills */}
             <div className="flex justify-center">
                 <div className={`p-1.5 flex gap-2 ${style === THEMES.NEOBRUTALISM ? 'bg-white border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-none' : 'bg-white/5 border border-white/10 backdrop-blur-xl rounded-2xl'}`}>
@@ -488,6 +667,13 @@ export const GroupDetails = () => {
                     >
                         <ScaleIcon /> Balances
                     </button>
+                    <button
+                        type="button"
+                        onClick={() => setActiveTab('analytics')}
+                        className={`px-6 py-2 font-bold transition-all flex items-center gap-2 ${activeTab === 'analytics' ? (style === THEMES.NEOBRUTALISM ? 'bg-purple-500 text-white rounded-none' : 'bg-purple-500/20 text-purple-400 shadow-sm rounded-xl') : 'opacity-60 hover:opacity-100'}`}
+                    >
+                        <PieChart size={18} /> Analytics
+                    </button>
                 </div>
             </div>
 
@@ -501,6 +687,37 @@ export const GroupDetails = () => {
                         exit={{ opacity: 0, y: -20 }}
                         className="space-y-4 max-w-3xl mx-auto"
                     >
+                        {/* Search Bar */}
+                        <div className={`relative ${style === THEMES.NEOBRUTALISM ? '' : ''}`}>
+                            <Search size={20} className="absolute left-4 top-1/2 -translate-y-1/2 opacity-50" />
+                            <input
+                                type="text"
+                                placeholder="Search expenses by description or tag..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className={`w-full pl-12 pr-4 py-3 font-medium ${style === THEMES.NEOBRUTALISM
+                                    ? 'bg-white border-2 border-black focus:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] focus:-translate-y-1 transition-all rounded-none'
+                                    : 'bg-white/5 border border-white/10 rounded-2xl backdrop-blur-sm focus:border-white/30 focus:bg-white/10'
+                                    } outline-none`}
+                            />
+                            {searchQuery && (
+                                <button
+                                    type="button"
+                                    onClick={() => setSearchQuery('')}
+                                    className="absolute right-4 top-1/2 -translate-y-1/2 opacity-50 hover:opacity-100"
+                                >
+                                    ✕
+                                </button>
+                            )}
+                        </div>
+
+                        {/* Search Results Count */}
+                        {searchQuery && (
+                            <p className="text-sm opacity-70">
+                                Found {expenses.length} expense{expenses.length !== 1 ? 's' : ''} matching "{searchQuery}"
+                            </p>
+                        )}
+
                         {loading ? Array(3).fill(0).map((_, i) => <Skeleton key={i} className="h-24 w-full rounded-2xl" />) :
                             expenses.map((expense, idx) => (
                                 <motion.div
@@ -513,7 +730,7 @@ export const GroupDetails = () => {
                                     onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openEditExpense(expense); } }}
                                     tabIndex={0}
                                     role="button"
-                                    aria-label={`Expense: ${expense.description}, ${group.currency} ${expense.amount.toFixed(2)}`}
+                                    aria-label={`Expense: ${expense.description}, ${formatCurrency(expense.amount, group?.currency)}`}
                                     className={`p-5 flex items-center gap-5 cursor-pointer group relative overflow-hidden ${style === THEMES.NEOBRUTALISM
                                         ? 'bg-white border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] rounded-none'
                                         : 'bg-white/5 border border-white/10 rounded-2xl backdrop-blur-sm hover:bg-white/10 transition-all'
@@ -532,7 +749,7 @@ export const GroupDetails = () => {
                                                 {members.find(m => m.userId === expense.paidBy)?.user?.name?.charAt(0)}
                                             </div>
                                             <p className="text-sm opacity-60 truncate">
-                                                <span className="font-semibold text-foreground">{members.find(m => m.userId === expense.paidBy)?.user?.name || 'Unknown'}</span> paid <span className="font-bold">{group.currency} {expense.amount.toFixed(2)}</span>
+                                                <span className="font-semibold text-foreground">{members.find(m => m.userId === expense.paidBy)?.user?.name || 'Unknown'}</span> paid <span className="font-bold">{formatCurrency(expense.amount, group?.currency)}</span>
                                             </p>
                                         </div>
                                     </div>
@@ -553,6 +770,37 @@ export const GroupDetails = () => {
                                 <p className="text-sm">Add your first expense to get started!</p>
                             </div>
                         )}
+
+                        {hasMore && expenses.length > 0 && (
+                            <div className="flex justify-center py-4">
+                                <Button
+                                    variant="secondary"
+                                    onClick={(e) => { e.stopPropagation(); loadMoreExpenses(); }}
+                                    disabled={loadingMore}
+                                >
+                                    {loadingMore ? 'Loading...' : 'Load More'}
+                                </Button>
+                            </div>
+                        )}
+                    </motion.div>
+                ) : activeTab === 'analytics' ? (
+                    <motion.div
+                        key="analytics"
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        className="space-y-6 max-w-6xl mx-auto"
+                    >
+                        <AnalyticsContent
+                            analytics={analytics}
+                            groupCurrency={group?.currency || 'USD'}
+                            timeframe={timeframe}
+                            onTimeframeChange={setTimeframe}
+                            selectedYear={selectedYear}
+                            selectedMonth={selectedMonth}
+                            onYearChange={setSelectedYear}
+                            onMonthChange={setSelectedMonth}
+                        />
                     </motion.div>
                 ) : (
                     <motion.div
@@ -586,7 +834,7 @@ export const GroupDetails = () => {
                                         <div className="h-0.5 w-full bg-gray-200 dark:bg-gray-700 relative">
                                             <div className="absolute right-0 top-1/2 -translate-y-1/2 w-2 h-2 bg-gray-400 rounded-full" />
                                         </div>
-                                        <span className="font-mono font-black text-xl">{group.currency} {s.amount.toFixed(2)}</span>
+                                        <span className="font-mono font-black text-xl">{formatCurrency(s.amount, group?.currency)}</span>
                                     </div>
 
                                     <div className="flex flex-col items-center gap-2">
@@ -841,7 +1089,7 @@ export const GroupDetails = () => {
                         </select>
                     </div>
                     <Input
-                        label={`Amount (${group.currency})`}
+                        label={`Amount (${group?.currency || 'USD'})`}
                         type="number"
                         placeholder="0.00"
                         value={paymentAmount}
@@ -891,6 +1139,27 @@ export const GroupDetails = () => {
                                     disabled={!isAdmin}
                                     required
                                 />
+                                <div className="space-y-1.5">
+                                    <label htmlFor="group-currency-select" className={`text-sm font-bold ${style === THEMES.NEOBRUTALISM ? 'text-black uppercase' : 'opacity-70'}`}>
+                                        Group Currency
+                                    </label>
+                                    <select
+                                        id="group-currency-select"
+                                        value={editGroupCurrency}
+                                        onChange={e => setEditGroupCurrency(e.target.value)}
+                                        disabled={!isAdmin}
+                                        className={`w-full p-3 font-bold transition-all outline-none ${style === THEMES.NEOBRUTALISM
+                                            ? 'bg-white border-2 border-black rounded-none'
+                                            : 'bg-white/10 dark:bg-white/5 border border-white/20 dark:border-white/10 rounded-xl'
+                                            }`}
+                                    >
+                                        {Object.values(CURRENCIES).map((c) => (
+                                            <option key={c.code} value={c.code}>
+                                                {c.code} ({c.symbol}) - {c.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
                                 {isAdmin && <Button type="submit" className="w-full">Update Group</Button>}
                             </form>
                             <div className={`p-4 ${style === THEMES.NEOBRUTALISM ? 'bg-gray-100 border-2 border-black rounded-none' : 'bg-black/5 dark:bg-white/5 rounded-lg'}`}>
@@ -961,7 +1230,7 @@ export const GroupDetails = () => {
                     )}
                 </div>
             </Modal>
-        </div>
+        </div >
     );
 };
 
