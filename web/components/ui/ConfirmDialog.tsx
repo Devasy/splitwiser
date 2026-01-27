@@ -28,7 +28,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   onConfirm,
   onCancel,
 }) => {
-  const { style, mode } = useTheme();
+  const { style } = useTheme();
   const isNeo = style === THEMES.NEOBRUTALISM;
 
   // Determine styles based on variant
@@ -63,6 +63,8 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
     }
   };
 
+  const isDestructive = variant === 'danger' || variant === 'warning';
+
   return (
     <Modal
       isOpen={isOpen}
@@ -70,10 +72,10 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
       title={title}
       footer={
         <>
-          <Button variant="ghost" onClick={onCancel}>
+          <Button variant="ghost" onClick={onCancel} autoFocus={isDestructive}>
             {cancelText}
           </Button>
-          <Button variant={getButtonVariant()} onClick={onConfirm} autoFocus>
+          <Button variant={getButtonVariant()} onClick={onConfirm} autoFocus={!isDestructive}>
             {confirmText}
           </Button>
         </>

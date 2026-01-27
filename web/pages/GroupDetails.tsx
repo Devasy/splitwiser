@@ -367,6 +367,21 @@ export const GroupDetails = () => {
         if (!id || !isAdmin) return;
         if (memberId === user?._id) return;
 
+        const hasUnsettled = settlements.some(
+            s => (s.fromUserId === memberId || s.toUserId === memberId) && (s.amount || 0) > 0
+        );
+
+        if (hasUnsettled) {
+            await confirm({
+                title: 'Cannot Remove Member',
+                description: 'This member has unsettled balances in the group. Please settle all debts before removing them.',
+                confirmText: 'OK',
+                variant: 'info',
+                cancelText: 'Close'
+            });
+            return;
+        }
+
         const confirmed = await confirm({
             title: 'Remove Member',
             description: `Are you sure you want to remove ${memberName} from the group?`,
@@ -376,13 +391,6 @@ export const GroupDetails = () => {
 
         if (confirmed) {
             try {
-                const hasUnsettled = settlements.some(
-                    s => (s.fromUserId === memberId || s.toUserId === memberId) && (s.amount || 0) > 0
-                );
-                if (hasUnsettled) {
-                    alert('Cannot remove: This member has unsettled balances in the group.');
-                    return;
-                }
                 await removeMember(id, memberId);
                 fetchData();
                 addToast(`Removed ${memberName} from group`, 'success');
