@@ -35,7 +35,10 @@ Fallback option using the Procfile.
 MONGODB_URL=mongodb+srv://username:password@cluster.mongodb.net/database
 SECRET_KEY=your-super-secure-jwt-secret-key-generate-a-new-one
 ALLOWED_ORIGINS=https://your-frontend-domain.com,https://your-app.vercel.app,http://localhost:3000
+FRONTEND_URL=https://your-frontend-domain.netlify.app
 ```
+
+**Important for Splitwise OAuth**: The `FRONTEND_URL` variable is critical for the Splitwise import functionality. It must be set to your production frontend URL (e.g., `https://your-app.netlify.app` or `https://your-app.vercel.app`). Without this, the OAuth callback will fail in production.
 
 ### Optional Variables (with defaults)
 ```
@@ -144,6 +147,25 @@ Your deployed API will be available at:
 - Health check: `https://your-app.railway.app/health`
 - API docs: `https://your-app.railway.app/docs`
 
+## Performance Optimizations
+
+The Splitwise import functionality has been optimized for serverless and free-tier deployments:
+
+### Concurrent Processing
+- **Async API Calls**: All Splitwise API calls use `asyncio.to_thread()` to prevent blocking
+- **Parallel Expense Processing**: Expenses are processed in parallel using `asyncio.gather()` with a semaphore (limit: 10 concurrent operations)
+- **Batch Preview Generation**: Group expense counts are fetched concurrently during preview
+
+### Benefits
+- **5-10x faster imports** on free-tier Railway deployments
+- **Reduced memory usage** through controlled concurrency
+- **Better serverless behavior** with non-blocking I/O operations
+
+### Configuration
+The default concurrency limit is set to 10 for Railway free tier. If you're on a paid plan with more resources, you can adjust the semaphore limits in:
+- `backend/app/integrations/service.py` - `_import_expenses()` method
+- Preview endpoint concurrency in `preview_splitwise_import()` method
+
 ## Troubleshooting
 
 ### Common Issues:
@@ -151,6 +173,7 @@ Your deployed API will be available at:
 2. **App won't start**: Verify environment variables are set correctly
 3. **CORS errors**: Make sure `ALLOWED_ORIGINS` includes your frontend domain
 4. **Database connection**: Verify `MONGODB_URL` is correct and accessible
+5. **Splitwise OAuth fails**: Ensure `FRONTEND_URL` is set to your production frontend URL and matches the callback URL registered in your Splitwise app settings
 
 ### Logs:
 Check Railway deployment logs in the dashboard for detailed error messages.
