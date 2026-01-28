@@ -54,8 +54,22 @@ class ExpenseService:
             raise HTTPException(status_code=500, detail="Failed to process group ID")
 
         # Verify user is member of the group
+        # Query for both string and ObjectId userId formats for compatibility with imported groups
+        try:
+            user_obj_id = ObjectId(user_id)
+        except:
+            user_obj_id = user_id
+
         group = await self.groups_collection.find_one(
-            {"_id": group_obj_id, "members.userId": user_id}
+            {
+                "_id": group_obj_id,
+                "$or": [
+                    {"members.userId": user_obj_id},
+                    {"members.userId": user_id},
+                    {"createdBy": user_obj_id},
+                    {"createdBy": user_id},
+                ],
+            }
         )
         if not group:  # User not a member of the group
             raise HTTPException(
@@ -81,6 +95,7 @@ class ExpenseService:
             "paidBy": expense_data.paidBy,
             "description": expense_data.description,
             "amount": expense_data.amount,
+            "currency": expense_data.currency or group.get("currency", "USD"),
             "splits": [split.model_dump() for split in expense_data.splits],
             "splitType": expense_data.splitType,
             "tags": expense_data.tags or [],
@@ -101,6 +116,9 @@ class ExpenseService:
 
         # Get optimized settlements for the group
         optimized_settlements = await self.calculate_optimized_settlements(group_id)
+
+        # Update cached balances for the group
+        await self._recalculate_group_balances(group_id)
 
         # Get group summary
         group_summary = await self._get_group_summary(group_id, optimized_settlements)
@@ -130,16 +148,24 @@ class ExpenseService:
         user_names = {str(user["_id"]): user.get("name", "Unknown") for user in users}
 
         for split in expense_doc["splits"]:
+            # Skip if split user is the payer (they don't owe themselves)
+            if split["userId"] == payer_id:
+                continue
+
             settlement_doc = {
                 "_id": ObjectId(),
                 "expenseId": expense_id,
                 "groupId": group_id,
-                "payerId": payer_id,
-                "payeeId": split["userId"],
-                "payerName": user_names.get(payer_id, "Unknown"),
-                "payeeName": user_names.get(split["userId"], "Unknown"),
+                # IMPORTANT: payerId = debtor (person who OWES/will pay)
+                #            payeeId = creditor (person who is OWED/paid the expense)
+                # This matches: net_balances[payerId][payeeId] means payerId owes payeeId
+                "payerId": split["userId"],  # The debtor (person who owes)
+                "payeeId": payer_id,  # The creditor (person who paid)
                 "amount": split["amount"],
-                "status": "completed" if split["userId"] == payer_id else "pending",
+                "currency": expense_doc.get("currency", "USD"),
+                "payerName": user_names.get(split["userId"], "Unknown"),  # Debtor name
+                "payeeName": user_names.get(payer_id, "Unknown"),  # Creditor name
+                "status": "pending",
                 "description": f"Share for {expense_doc['description']}",
                 "createdAt": datetime.utcnow(),
             }
@@ -163,12 +189,26 @@ class ExpenseService:
         from_date: Optional[datetime] = None,
         to_date: Optional[datetime] = None,
         tags: Optional[List[str]] = None,
+        search: Optional[str] = None,
     ) -> Dict[str, Any]:
         """List expenses for a group with pagination and filtering"""
 
-        # Verify user access
+        # Verify user access - handle both string and ObjectId userId formats
+        try:
+            user_obj_id = ObjectId(user_id)
+        except:
+            user_obj_id = user_id
+
         group = await self.groups_collection.find_one(
-            {"_id": ObjectId(group_id), "members.userId": user_id}
+            {
+                "_id": ObjectId(group_id),
+                "$or": [
+                    {"members.userId": user_obj_id},
+                    {"members.userId": user_id},
+                    {"createdBy": user_obj_id},
+                    {"createdBy": user_id},
+                ],
+            }
         )
         if not group:
             raise ValueError("Group not found or user not a member")
@@ -187,7 +227,14 @@ class ExpenseService:
         if tags:
             query["tags"] = {"$in": tags}
 
-        # Get total count
+        # Add search filter
+        if search:
+            query["$or"] = [
+                {"description": {"$regex": search, "$options": "i"}},
+                {"tags": {"$regex": search, "$options": "i"}},
+            ]
+
+        # Get total count for filtered results
         total = await self.expenses_collection.count_documents(query)
 
         # Get expenses with pagination
@@ -205,7 +252,7 @@ class ExpenseService:
             expense = await self._expense_doc_to_response(doc)
             expenses.append(expense)
 
-        # Calculate summary
+        # Calculate filtered summary (for current query)
         pipeline = [
             {"$match": query},
             {
@@ -220,12 +267,35 @@ class ExpenseService:
         summary_result = await self.expenses_collection.aggregate(pipeline).to_list(
             None
         )
-        summary = (
+        filtered_summary = (
             summary_result[0]
             if summary_result
             else {"totalAmount": 0, "expenseCount": 0, "avgExpense": 0}
         )
-        summary.pop("_id", None)
+        filtered_summary.pop("_id", None)
+
+        # Calculate TOTAL group summary (all expenses, no filters)
+        total_query = {"groupId": group_id}
+        total_pipeline = [
+            {"$match": total_query},
+            {
+                "$group": {
+                    "_id": None,
+                    "totalAmount": {"$sum": "$amount"},
+                    "expenseCount": {"$sum": 1},
+                    "avgExpense": {"$avg": "$amount"},
+                }
+            },
+        ]
+        total_summary_result = await self.expenses_collection.aggregate(
+            total_pipeline
+        ).to_list(None)
+        total_summary = (
+            total_summary_result[0]
+            if total_summary_result
+            else {"totalAmount": 0, "expenseCount": 0, "avgExpense": 0}
+        )
+        total_summary.pop("_id", None)
 
         return {
             "expenses": expenses,
@@ -237,7 +307,8 @@ class ExpenseService:
                 "hasNext": page * limit < total,
                 "hasPrev": page > 1,
             },
-            "summary": summary,
+            "summary": filtered_summary,  # Summary for filtered results
+            "totalSummary": total_summary,  # Summary for ALL expenses in group
         }
 
     async def get_expense_by_id(
@@ -260,9 +331,22 @@ class ExpenseService:
             logger.error(f"Unexpected error parsing IDs: {e}")
             raise HTTPException(status_code=500, detail="Unable to process IDs")
 
-        # Verify user access
+        # Verify user access - handle both string and ObjectId userId formats
+        try:
+            user_obj_id = ObjectId(user_id)
+        except:
+            user_obj_id = user_id
+
         group = await self.groups_collection.find_one(
-            {"_id": group_obj_id, "members.userId": user_id}
+            {
+                "_id": group_obj_id,
+                "$or": [
+                    {"members.userId": user_obj_id},
+                    {"members.userId": user_id},
+                    {"createdBy": user_obj_id},
+                    {"createdBy": user_id},
+                ],
+            }
         )
         if not group:  # Unauthorized access
             raise HTTPException(
@@ -432,6 +516,9 @@ class ExpenseService:
                     status_code=500, detail="Failed to retrieve updated expense"
                 )
 
+            # Update cached balances for the group
+            await self._recalculate_group_balances(group_id)
+
             return await self._expense_doc_to_response(updated_expense)
 
         # Allowing FastAPI exception to bubble up for proper handling
@@ -475,6 +562,11 @@ class ExpenseService:
         result = await self.expenses_collection.delete_one(
             {"_id": ObjectId(expense_id)}
         )
+
+        # Update cached balances for the group
+        if result.deleted_count > 0:
+            await self._recalculate_group_balances(group_id)
+
         return result.deleted_count > 0
 
     async def calculate_optimized_settlements(
@@ -492,9 +584,10 @@ class ExpenseService:
     ) -> List[OptimizedSettlement]:
         """Normal splitting algorithm - simplifies only direct relationships"""
 
-        # Get all pending settlements for the group
+        # Get all settlements for the group regardless of status
+        # We calculate net balances from ALL transactions to get true outstanding amounts
         settlements = await self.settlements_collection.find(
-            {"groupId": group_id, "status": "pending"}
+            {"groupId": group_id}
         ).to_list(None)
 
         # Calculate net balances between each pair of users
@@ -549,9 +642,10 @@ class ExpenseService:
     ) -> List[OptimizedSettlement]:
         """Advanced settlement algorithm using graph optimization"""
 
-        # Get all pending settlements for the group
+        # Get all settlements for the group regardless of status
+        # We calculate net balances from ALL transactions to get true outstanding amounts
         settlements = await self.settlements_collection.find(
-            {"groupId": group_id, "status": "pending"}
+            {"groupId": group_id}
         ).to_list(None)
 
         # Calculate net balance for each user (what they owe - what they are owed)
@@ -566,9 +660,12 @@ class ExpenseService:
             user_names[payer] = settlement["payerName"]
             user_names[payee] = settlement["payeeName"]
 
-            # Payer paid for payee, so payee owes payer
-            user_balances[payee] += amount  # Positive means owes money
-            user_balances[payer] -= amount  # Negative means is owed money
+            # In our settlement model:
+            # payerId = debtor (person who OWES money)
+            # payeeId = creditor (person who is OWED money)
+            # So: payer owes payee the amount
+            user_balances[payer] += amount  # Payer owes money (positive = debtor)
+            user_balances[payee] -= amount  # Payee is owed money (negative = creditor)
 
         # Separate debtors (positive balance) and creditors (negative balance)
         debtors = []  # (user_id, amount_owed)
@@ -621,14 +718,80 @@ class ExpenseService:
 
         return optimized
 
+    async def _recalculate_group_balances(self, group_id: str) -> Dict[str, float]:
+        """
+        Recalculate and cache member balances for a group.
+
+        Uses the optimized settlement algorithm to compute net balances,
+        then stores them in the group document for fast reads.
+
+        Returns:
+            Dict mapping userId to their net balance (positive = owed, negative = owes)
+        """
+        # Get optimized settlements for this group
+        optimized = await self._calculate_advanced_settlements(group_id)
+
+        # Convert settlements to per-member net balances
+        member_balances: Dict[str, float] = defaultdict(float)
+        for settlement in optimized:
+            # fromUserId owes money (negative balance)
+            member_balances[settlement.fromUserId] -= settlement.amount
+            # toUserId is owed money (positive balance)
+            member_balances[settlement.toUserId] += settlement.amount
+
+        # Update group document with cached balances
+        await self.groups_collection.update_one(
+            {"_id": ObjectId(group_id)},
+            {
+                "$set": {
+                    "cachedBalances": dict(member_balances),
+                    "balancesUpdatedAt": datetime.now(timezone.utc),
+                }
+            },
+        )
+
+        logger.debug(f"Updated cached balances for group {group_id}: {member_balances}")
+        return dict(member_balances)
+
+    async def _get_cached_balances(self, group_id: str) -> Dict[str, float]:
+        """
+        Get cached balances for a group, recalculating if missing.
+
+        Returns:
+            Dict mapping userId to their net balance
+        """
+        group = await self.groups_collection.find_one({"_id": ObjectId(group_id)})
+        if not group:
+            return {}
+
+        cached = group.get("cachedBalances")
+        if cached is not None:
+            return cached
+
+        # Cache miss - recalculate
+        return await self._recalculate_group_balances(group_id)
+
     async def create_manual_settlement(
         self, group_id: str, settlement_data: SettlementCreateRequest, user_id: str
     ) -> Settlement:
         """Create a manual settlement record"""
 
-        # Verify user access
+        # Verify user access - handle both string and ObjectId userId formats
+        try:
+            user_obj_id = ObjectId(user_id)
+        except:
+            user_obj_id = user_id
+
         group = await self.groups_collection.find_one(
-            {"_id": ObjectId(group_id), "members.userId": user_id}
+            {
+                "_id": ObjectId(group_id),
+                "$or": [
+                    {"members.userId": user_obj_id},
+                    {"members.userId": user_id},
+                    {"createdBy": user_obj_id},
+                    {"createdBy": user_id},
+                ],
+            }
         )
         if not group:
             logger.warning(
@@ -660,6 +823,7 @@ class ExpenseService:
             "payerName": user_names.get(settlement_data.payer_id, "Unknown"),
             "payeeName": user_names.get(settlement_data.payee_id, "Unknown"),
             "amount": settlement_data.amount,
+            "currency": group.get("currency", "USD"),
             "status": "completed",
             "description": settlement_data.description or "Manual settlement",
             "paidAt": settlement_data.paidAt or datetime.utcnow(),
@@ -667,6 +831,9 @@ class ExpenseService:
         }
 
         await self.settlements_collection.insert_one(settlement_doc)
+
+        # Update cached balances for the group
+        await self._recalculate_group_balances(group_id)
 
         return Settlement(**{**settlement_doc, "_id": str(settlement_doc["_id"])})
 
@@ -720,9 +887,22 @@ class ExpenseService:
     ) -> Dict[str, Any]:
         """Get settlements for a group with pagination"""
 
-        # Verify user access
+        # Verify user access - handle both string and ObjectId userId formats
+        try:
+            user_obj_id = ObjectId(user_id)
+        except:
+            user_obj_id = user_id
+
         group = await self.groups_collection.find_one(
-            {"_id": ObjectId(group_id), "members.userId": user_id}
+            {
+                "_id": ObjectId(group_id),
+                "$or": [
+                    {"members.userId": user_obj_id},
+                    {"members.userId": user_id},
+                    {"createdBy": user_obj_id},
+                    {"createdBy": user_id},
+                ],
+            }
         )
         if not group:
             logger.warning(
@@ -767,13 +947,21 @@ class ExpenseService:
     ) -> Settlement:
         """Get a single settlement by ID"""
 
-        # Verify user access
+        # Verify user access - handle both string and ObjectId userId formats
+        try:
+            user_obj_id = ObjectId(user_id)
+        except:
+            user_obj_id = user_id
+
         group = await self.groups_collection.find_one(
             {
-                "_id": ObjectId(
-                    group_id
-                ),  # Assuming valid object ID format (same as above functions)
-                "members.userId": user_id,
+                "_id": ObjectId(group_id),
+                "$or": [
+                    {"members.userId": user_obj_id},
+                    {"members.userId": user_id},
+                    {"createdBy": user_obj_id},
+                    {"createdBy": user_id},
+                ],
             }
         )
         if not group:
@@ -817,6 +1005,9 @@ class ExpenseService:
             {"_id": ObjectId(settlement_id)}
         )
 
+        # Update cached balances for the group
+        await self._recalculate_group_balances(group_id)
+
         return Settlement(**{**settlement_doc, "_id": str(settlement_doc["_id"])})
 
     async def delete_settlement(
@@ -836,6 +1027,10 @@ class ExpenseService:
         result = await self.settlements_collection.delete_one(
             {"_id": ObjectId(settlement_id), "groupId": group_id}
         )
+
+        # Update cached balances for the group if deletion was successful
+        if result.deleted_count > 0:
+            await self._recalculate_group_balances(group_id)
 
         return result.deleted_count > 0
 
@@ -954,19 +1149,33 @@ class ExpenseService:
 
     async def get_friends_balance_summary(self, user_id: str) -> Dict[str, Any]:
         """
-        Get cross-group friend balances using optimized aggregation pipeline.
+        Get cross-group friend balances using optimized settlements per group.
 
-        Performance: Optimized to use single aggregation query instead of N×M queries.
-        Example: 20 friends × 5 groups = 3 queries total (vs 100+ with naive approach).
+        This method now uses the same `calculate_optimized_settlements` algorithm
+        used everywhere else, ensuring consistency across all balance calculations.
 
-        Uses MongoDB aggregation to calculate all balances at once, then batch enriches
-        with user and group details for optimal performance.
+        Performance: N queries (one per group) for settlement calculation.
+        The cached balances feature reduces repeated calculations.
         """
 
-        # First, get all groups user belongs to (need this to filter friends properly)
-        groups = await self.groups_collection.find({"members.userId": user_id}).to_list(
-            length=500
-        )
+        # First, get all groups user belongs to
+        try:
+            user_object_id = ObjectId(user_id)
+        except errors.InvalidId:
+            user_object_id = None
+
+        groups = await self.groups_collection.find(
+            {
+                "$or": [
+                    {"members.userId": user_id},
+                    (
+                        {"members.userId": user_object_id}
+                        if user_object_id
+                        else {"_id": {"$exists": False}}
+                    ),
+                ]
+            }
+        ).to_list(length=500)
 
         if not groups:
             return {
@@ -980,84 +1189,57 @@ class ExpenseService:
                 },
             }
 
-        # Extract group IDs and friend IDs (only from user's groups)
-        group_ids = [str(g["_id"]) for g in groups]
-        friend_ids_in_groups = set()
+        # Build group map for name lookup
+        groups_map = {str(g["_id"]): g.get("name", "Unknown Group") for g in groups}
+
+        # Aggregate friend balances across all groups using optimized settlements
+        # friend_id -> {"balance": float, "groups": [{"groupId", "groupName", "balance"}]}
+        friend_balances: Dict[str, Dict[str, Any]] = defaultdict(
+            lambda: {"balance": 0, "groups": []}
+        )
+
         for group in groups:
-            for member in group["members"]:
-                if member["userId"] != user_id:
-                    friend_ids_in_groups.add(member["userId"])
+            group_id = str(group["_id"])
+            group_name = group.get("name", "Unknown Group")
 
-        # OPTIMIZATION: Single aggregation to calculate all friend balances at once
-        # Only for friends in user's groups and groups user belongs to
-        pipeline = [
-            # Step 1: Match settlements in user's groups involving the user
-            {
-                "$match": {
-                    "groupId": {"$in": group_ids},
-                    "$or": [
+            # Get optimized settlements for this group
+            optimized = await self.calculate_optimized_settlements(group_id)
+
+            for settlement in optimized:
+                # Check if user is involved in this settlement
+                if settlement.fromUserId == user_id:
+                    # User owes friend (negative balance for user = friend owes nothing to user)
+                    friend_id = settlement.toUserId
+                    friend_balances[friend_id]["balance"] -= settlement.amount
+                    friend_balances[friend_id]["groups"].append(
                         {
-                            "payerId": user_id,
-                            "payeeId": {"$in": list(friend_ids_in_groups)},
-                        },
-                        {
-                            "payeeId": user_id,
-                            "payerId": {"$in": list(friend_ids_in_groups)},
-                        },
-                    ],
-                }
-            },
-            # Step 2: Calculate net balance per friend per group
-            {
-                "$group": {
-                    "_id": {
-                        "friendId": {
-                            "$cond": [
-                                {"$eq": ["$payerId", user_id]},
-                                "$payeeId",
-                                "$payerId",
-                            ]
-                        },
-                        "groupId": "$groupId",
-                    },
-                    "balance": {
-                        "$sum": {
-                            "$cond": [
-                                # If user is payer, friend owes user (positive)
-                                {"$eq": ["$payerId", user_id]},
-                                "$amount",
-                                # If user is payee, user owes friend (negative)
-                                {"$multiply": ["$amount", -1]},
-                            ]
+                            "groupId": group_id,
+                            "groupName": group_name,
+                            "balance": -settlement.amount,
+                            "owesYou": False,
                         }
-                    },
-                }
-            },
-            # Step 3: Group by friend to get total balance across all groups
-            {
-                "$group": {
-                    "_id": "$_id.friendId",
-                    "totalBalance": {"$sum": "$balance"},
-                    "groups": {
-                        "$push": {"groupId": "$_id.groupId", "balance": "$balance"}
-                    },
-                }
-            },
-            # Step 4: Filter out friends with zero balance
-            {"$match": {"$expr": {"$gt": [{"$abs": "$totalBalance"}, 0.01]}}},
-        ]
+                    )
+                elif settlement.toUserId == user_id:
+                    # Friend owes user (positive balance = friend owes user)
+                    friend_id = settlement.fromUserId
+                    friend_balances[friend_id]["balance"] += settlement.amount
+                    friend_balances[friend_id]["groups"].append(
+                        {
+                            "groupId": group_id,
+                            "groupName": group_name,
+                            "balance": settlement.amount,
+                            "owesYou": True,
+                        }
+                    )
 
-        # Execute aggregation - Single query for all friend balances
-        try:
-            results = await self.settlements_collection.aggregate(pipeline).to_list(
-                length=500
-            )
-        except Exception as e:
-            logger.error(f"Error in optimized friends balance aggregation: {e}")
-            results = []
+        # Filter out friends with zero balance
+        friend_balances = {
+            fid: data
+            for fid, data in friend_balances.items()
+            if abs(data["balance"]) > 0.01
+        }
 
-        if not results:
-            # No balances found
+        if not friend_balances:
             return {
                 "friendsBalance": [],
                 "summary": {
@@ -1069,16 +1251,19 @@ class ExpenseService:
                 },
             }
 
-        # Extract unique friend IDs for batch fetching
-        friend_ids = list({result["_id"] for result in results})
-
-        # Build group map from groups we already fetched
-        groups_map = {str(g["_id"]): g.get("name", "Unknown Group") for g in groups}
-
-        # OPTIMIZATION: Batch fetch all friend details in one query
+        # Batch fetch all friend details
+        friend_ids = list(friend_balances.keys())
         try:
             friends_cursor = self.users_collection.find(
-                {"_id": {"$in": [ObjectId(fid) for fid in friend_ids]}},
+                {
+                    "_id": {
+                        "$in": [
+                            ObjectId(fid)
+                            for fid in friend_ids
+                            if ObjectId.is_valid(fid)
+                        ]
+                    }
+                },
                 {"_id": 1, "name": 1, "imageUrl": 1},
             )
             friends_list = await friends_cursor.to_list(length=500)
@@ -1087,33 +1272,13 @@ class ExpenseService:
             logger.error(f"Error batch fetching friend details: {e}")
             friends_map = {}
 
-        # Post-process results to build final response
-        friends_balance = []
+        # Build final response
+        friends_balance_list = []
         user_totals = {"totalOwedToYou": 0, "totalYouOwe": 0}
 
-        for result in results:
-            friend_id = result["_id"]
-            total_balance = result.get("totalBalance", 0)
-
-            # Get friend details from map
+        for friend_id, data in friend_balances.items():
+            total_balance = data["balance"]
             friend_details = friends_map.get(friend_id)
-
-            # Build breakdown by group
-            breakdown = []
-            for group_item in result.get("groups", []):
-                group_id = group_item["groupId"]
-                group_balance = group_item["balance"]
-
-                # Only include groups with significant balance
-                if abs(group_balance) > 0.01:
-                    breakdown.append(
-                        {
-                            "groupId": group_id,
-                            "groupName": groups_map.get(group_id, "Unknown Group"),
-                            "balance": round(group_balance, 2),
-                            "owesYou": group_balance > 0,
-                        }
-                    )
 
             # Build friend balance object
             friend_data = {
@@ -1128,13 +1293,13 @@ class ExpenseService:
                 ),
                 "netBalance": round(total_balance, 2),
                 "owesYou": total_balance > 0,
-                "breakdown": breakdown,
+                "breakdown": data["groups"],
                 "lastActivity": datetime.now(
                     timezone.utc
                 ),  # TODO: Calculate actual last activity
             }
 
-            friends_balance.append(friend_data)
+            friends_balance_list.append(friend_data)
 
             # Update totals
             if total_balance > 0:
@@ -1143,20 +1308,24 @@ class ExpenseService:
                 user_totals["totalYouOwe"] += abs(total_balance)
 
         return {
-            "friendsBalance": friends_balance,
+            "friendsBalance": friends_balance_list,
             "summary": {
                 "totalOwedToYou": round(user_totals["totalOwedToYou"], 2),
                 "totalYouOwe": round(user_totals["totalYouOwe"], 2),
                 "netBalance": round(
                     user_totals["totalOwedToYou"] - user_totals["totalYouOwe"], 2
                 ),
-                "friendCount": len(friends_balance),
+                "friendCount": len(friends_balance_list),
                 "activeGroups": len(groups),
             },
         }
 
     async def get_overall_balance_summary(self, user_id: str) -> Dict[str, Any]:
-        """Get overall balance summary for a user"""
+        """
+        Get overall balance summary for a user using cached balances.
+
+        Performance: O(1) read per group from cached balances vs O(N) aggregations.
+        """
 
         # Get all groups user belongs to
         groups = await self.groups_collection.find({"members.userId": user_id}).to_list(
@@ -1170,51 +1339,28 @@ class ExpenseService:
         for group in groups:
             group_id = str(group["_id"])
 
-            # Calculate user's balance in this group
-            pipeline = [
-                {
-                    "$match": {
-                        "groupId": group_id,
-                        "$or": [{"payerId": user_id}, {"payeeId": user_id}],
-                    }
-                },
-                {
-                    "$group": {
-                        "_id": None,
-                        "totalPaid": {
-                            "$sum": {
-                                "$cond": [{"$eq": ["$payerId", user_id]}, "$amount", 0]
-                            }
-                        },
-                        "totalOwed": {
-                            "$sum": {
-                                "$cond": [{"$eq": ["$payeeId", user_id]}, "$amount", 0]
-                            }
-                        },
-                    }
-                },
-            ]
+            # Read from cached balances (will recalculate if missing)
+            cached = group.get("cachedBalances")
+            if cached is None:
+                # Cache miss - recalculate
+                cached = await self._recalculate_group_balances(group_id)
 
-            result = await self.settlements_collection.aggregate(pipeline).to_list(None)
-            balance_data = result[0] if result else {"totalPaid": 0, "totalOwed": 0}
+            # Get user's balance from cache
+            user_balance = cached.get(user_id, 0)
 
-            group_balance = balance_data["totalPaid"] - balance_data["totalOwed"]
-
-            if (
-                abs(group_balance) > 0.01
-            ):  # Only include groups with significant balance
+            if abs(user_balance) > 0.01:  # Only include groups with significant balance
                 groups_summary.append(
                     {
                         "group_id": group_id,
                         "group_name": group["name"],
-                        "yourBalanceInGroup": group_balance,
+                        "yourBalanceInGroup": user_balance,
                     }
                 )
 
-                if group_balance > 0:
-                    total_owed_to_you += group_balance
+                if user_balance > 0:
+                    total_owed_to_you += user_balance
                 else:
-                    total_you_owe += abs(group_balance)
+                    total_you_owe += abs(user_balance)
 
         return {
             "totalOwedToYou": total_owed_to_you,
@@ -1251,10 +1397,18 @@ class ExpenseService:
             else:
                 end_date = datetime(year, month + 1, 1)
             period_str = f"{year}-{month:02d}"
-        elif period == "year" and year:
-            start_date = datetime(year, 1, 1)
-            end_date = datetime(year + 1, 1, 1)
-            period_str = str(year)
+        elif period == "6months":
+            # Last 6 months from today
+            now = datetime.utcnow()
+            start_date = (now - timedelta(days=180)).replace(day=1)
+            end_date = now
+            period_str = f"Last 6 months"
+        elif period == "year":
+            # Use provided year or default to current year
+            target_year = year if year else datetime.utcnow().year
+            start_date = datetime(target_year, 1, 1)
+            end_date = datetime(target_year + 1, 1, 1)
+            period_str = str(target_year)
         else:
             # Default to current month
             now = datetime.utcnow()
@@ -1277,7 +1431,10 @@ class ExpenseService:
         # Analyze categories (tags)
         tag_stats = defaultdict(lambda: {"amount": 0, "count": 0})
         for expense in expenses:
-            for tag in expense.get("tags", ["uncategorized"]):
+            tags = expense.get("tags", [])
+            if not tags:
+                tags = ["uncategorized"]
+            for tag in tags:
                 tag_stats[tag]["amount"] += expense["amount"]
                 tag_stats[tag]["count"] += 1
 
@@ -1287,7 +1444,7 @@ class ExpenseService:
         ):
             top_categories.append(
                 {
-                    "tag": tag,
+                    "category": tag,  # Changed from 'tag' to 'category' for frontend consistency
                     "amount": stats["amount"],
                     "count": stats["count"],
                     "percentage": round(
@@ -1301,7 +1458,7 @@ class ExpenseService:
                 }
             )
 
-        # Member contributions
+        # Member contributions (aggregated)
         member_contributions = []
         group_members = {member["userId"]: member for member in group["members"]}
 
@@ -1314,7 +1471,7 @@ class ExpenseService:
             total_paid = sum(
                 expense["amount"]
                 for expense in expenses
-                if expense["createdBy"] == member_id
+                if expense["paidBy"] == member_id
             )
 
             total_owed = 0
@@ -1332,6 +1489,51 @@ class ExpenseService:
                     "netContribution": total_paid - total_owed,
                 }
             )
+
+        # Member contribution timeline (cumulative by date)
+        # Only generate data points for dates that have expenses
+        contribution_timeline = []
+
+        # Get unique expense dates, sorted
+        expense_dates = sorted(set(e["createdAt"].date() for e in expenses))
+
+        if expense_dates:
+            # Pre-fetch all member names to avoid repeated DB queries
+            member_names = {}
+            for member_id in group_members:
+                user = await self.users_collection.find_one(
+                    {"_id": ObjectId(member_id)}
+                )
+                member_names[member_id] = (
+                    user.get("name", "Unknown") if user else "Unknown"
+                )
+
+            # Generate timeline for each expense date
+            for expense_date in expense_dates:
+                day_data = {"date": expense_date.strftime("%Y-%m-%d")}
+
+                # Get expenses up to and including this date (cumulative)
+                cumulative_expenses = [
+                    e for e in expenses if e["createdAt"].date() <= expense_date
+                ]
+
+                # Calculate total expenses up to this date
+                total_expenses_cumulative = sum(
+                    e["amount"] for e in cumulative_expenses
+                )
+                day_data["Total Expenses"] = total_expenses_cumulative
+
+                # Calculate cumulative contributions for each member
+                for member_id, user_name in member_names.items():
+                    # Cumulative amount paid by this member
+                    cumulative_paid = sum(
+                        e["amount"]
+                        for e in cumulative_expenses
+                        if e["paidBy"] == member_id
+                    )
+                    day_data[user_name] = cumulative_paid
+
+                contribution_timeline.append(day_data)
 
         # Expense trends (daily)
         expense_trends = []
@@ -1356,6 +1558,7 @@ class ExpenseService:
             "avgExpenseAmount": round(avg_expense, 2),
             "topCategories": top_categories[:10],  # Top 10 categories
             "memberContributions": member_contributions,
+            "contributionTimeline": contribution_timeline,  # New timeline data
             "expenseTrends": expense_trends,
         }
 

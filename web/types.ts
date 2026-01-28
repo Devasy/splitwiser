@@ -80,3 +80,43 @@ export interface BalanceSummary {
   currency: string;
   groupsSummary: GroupBalanceSummary[];
 }
+
+export interface FriendBalance {
+  friendId: string;
+  userName: string;
+  netBalance: number;
+  owedToYou: number;
+  youOwe: number;
+}
+
+export interface CategorySpending {
+  category: string;
+  amount: number;
+  percentage: number;
+  count: number;
+}
+
+export interface ExpenseTrend {
+  date: string;
+  amount: number;
+  count: number;
+}
+
+export interface MemberContribution {
+  userId: string;
+  userName: string;
+  totalPaid: number;
+  totalOwed: number;
+  netContribution: number;
+}
+
+export interface GroupAnalytics {
+  period: string;
+  totalExpenses: number;
+  expenseCount: number;
+  avgExpenseAmount: number;
+  topCategories: CategorySpending[];
+  memberContributions: MemberContribution[];
+  contributionTimeline?: Array<{ date: string;[memberName: string]: number | string }>;
+  expenseTrends: ExpenseTrend[];
+}

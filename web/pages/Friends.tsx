@@ -5,6 +5,7 @@ import { EmptyState } from '../components/ui/EmptyState';
 import { THEMES } from '../constants';
 import { useTheme } from '../contexts/ThemeContext';
 import { getFriendsBalance, getGroups } from '../services/api';
+import { formatCurrency } from '../utils/formatters';
 
 interface GroupBreakdown {
   groupId: string;
@@ -91,8 +92,8 @@ export const Friends = () => {
   const totalOwedToYou = friends.reduce((acc, curr) => curr.netBalance > 0 ? acc + curr.netBalance : acc, 0);
   const totalYouOwe = friends.reduce((acc, curr) => curr.netBalance < 0 ? acc + Math.abs(curr.netBalance) : acc, 0);
 
-  const formatCurrency = (amount: number) => {
-    return `$${Math.abs(amount).toFixed(2)}`;
+  const formatPrice = (amount: number) => {
+    return formatCurrency(Math.abs(amount));
   };
 
   const getAvatarContent = (imageUrl: string | undefined, name: string, size: 'sm' | 'lg' = 'lg') => {
@@ -149,8 +150,8 @@ export const Friends = () => {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className={`pl-12 pr-4 py-4 outline-none transition-all w-full md:w-80 font-bold ${isNeo
-                  ? 'bg-white border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] focus:translate-x-[2px] focus:translate-y-[2px] focus:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] rounded-none placeholder:text-black/40'
-                  : 'bg-white/10 border border-white/20 focus:bg-white/20 focus:border-white/30 backdrop-blur-md rounded-2xl text-white placeholder:text-white/40'
+                ? 'bg-white border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] focus:translate-x-[2px] focus:translate-y-[2px] focus:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] rounded-none placeholder:text-black/40'
+                : 'bg-white/10 border border-white/20 focus:bg-white/20 focus:border-white/30 backdrop-blur-md rounded-2xl text-white placeholder:text-white/40'
                 }`}
             />
           </div>
@@ -164,13 +165,13 @@ export const Friends = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
           className={`p-6 flex items-center justify-between ${isNeo
-              ? 'bg-emerald-100 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-none'
-              : 'bg-emerald-500/10 border border-emerald-500/20 rounded-3xl'
+            ? 'bg-emerald-100 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-none'
+            : 'bg-emerald-500/10 border border-emerald-500/20 rounded-3xl'
             }`}
         >
           <div>
             <p className={`text-sm font-bold uppercase tracking-wider mb-1 ${isNeo ? 'text-black/60' : 'text-emerald-500'}`}>Total Owed to You</p>
-            <h3 className={`text-4xl font-black ${isNeo ? 'text-black' : 'text-emerald-500'}`}>{formatCurrency(totalOwedToYou)}</h3>
+            <h3 className={`text-4xl font-black ${isNeo ? 'text-black' : 'text-emerald-500'}`}>{formatPrice(totalOwedToYou)}</h3>
           </div>
           <div className={`w-12 h-12 flex items-center justify-center ${isNeo ? 'bg-black text-white rounded-none' : 'bg-emerald-500 text-white rounded-full'}`}>
             <TrendingUp size={24} />
@@ -182,13 +183,13 @@ export const Friends = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
           className={`p-6 flex items-center justify-between ${isNeo
-              ? 'bg-orange-100 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-none'
-              : 'bg-orange-500/10 border border-orange-500/20 rounded-3xl'
+            ? 'bg-orange-100 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-none'
+            : 'bg-orange-500/10 border border-orange-500/20 rounded-3xl'
             }`}
         >
           <div>
             <p className={`text-sm font-bold uppercase tracking-wider mb-1 ${isNeo ? 'text-black/60' : 'text-orange-500'}`}>Total You Owe</p>
-            <h3 className={`text-4xl font-black ${isNeo ? 'text-black' : 'text-orange-500'}`}>{formatCurrency(totalYouOwe)}</h3>
+            <h3 className={`text-4xl font-black ${isNeo ? 'text-black' : 'text-orange-500'}`}>{formatPrice(totalYouOwe)}</h3>
           </div>
           <div className={`w-12 h-12 flex items-center justify-center ${isNeo ? 'bg-black text-white rounded-none' : 'bg-orange-500 text-white rounded-full'}`}>
             <TrendingDown size={24} />
@@ -204,7 +205,7 @@ export const Friends = () => {
           className={`p-4 flex items-center justify-between ${isNeo
             ? 'bg-red-100 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-none'
             : 'bg-red-500/10 border border-red-500/20 rounded-2xl'
-          }`}
+            }`}
         >
           <p className={`font-bold ${isNeo ? 'text-black' : 'text-red-400'}`}>{error}</p>
           <button
@@ -213,7 +214,7 @@ export const Friends = () => {
             className={`px-4 py-2 font-bold text-sm ${isNeo
               ? 'bg-black text-white hover:bg-gray-800 rounded-none'
               : 'bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg'
-            }`}
+              }`}
           >
             Retry
           </button>
@@ -243,24 +244,24 @@ export const Friends = () => {
                 exit={{ opacity: 0, scale: 0.9 }}
                 transition={{ delay: index * 0.05 }}
                 className={`group relative overflow-hidden flex flex-col transition-all duration-300 ${isNeo
-                    ? 'bg-white border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] rounded-none'
-                    : 'bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 backdrop-blur-sm rounded-3xl'
+                  ? 'bg-white border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] rounded-none'
+                  : 'bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 backdrop-blur-sm rounded-3xl'
                   }`}
               >
                 <button
                   type="button"
                   onClick={() => toggleExpand(friend.id)}
                   aria-expanded={expandedId === friend.id}
-                  aria-label={`${friend.userName}, ${friend.netBalance > 0 ? 'owes you' : friend.netBalance < 0 ? 'you owe' : 'settled'} ${formatCurrency(friend.netBalance)}`}
+                  aria-label={`${friend.userName}, ${friend.netBalance > 0 ? 'owes you' : friend.netBalance < 0 ? 'you owe' : 'settled'} ${formatPrice(friend.netBalance)}`}
                   className="w-full p-6 text-left cursor-pointer">
 
                   <div className="flex items-start justify-between mb-4">
                     {getAvatarContent(friend.userImageUrl, friend.userName, 'lg')}
                     <div className={`px-3 py-1 text-xs font-bold uppercase tracking-wider ${friend.netBalance > 0
-                        ? (isNeo ? 'bg-emerald-200 text-black border border-black' : 'bg-emerald-500/20 text-emerald-400')
-                        : friend.netBalance < 0
-                          ? (isNeo ? 'bg-orange-200 text-black border border-black' : 'bg-orange-500/20 text-orange-400')
-                          : (isNeo ? 'bg-gray-200 text-black border border-black' : 'bg-white/10 text-white/60')
+                      ? (isNeo ? 'bg-emerald-200 text-black border border-black' : 'bg-emerald-500/20 text-emerald-400')
+                      : friend.netBalance < 0
+                        ? (isNeo ? 'bg-orange-200 text-black border border-black' : 'bg-orange-500/20 text-orange-400')
+                        : (isNeo ? 'bg-gray-200 text-black border border-black' : 'bg-white/10 text-white/60')
                       } ${isNeo ? 'rounded-none' : 'rounded-full'}`}>
                       {friend.netBalance > 0 ? 'Owes You' : friend.netBalance < 0 ? 'You Owe' : 'Settled'}
                     </div>
@@ -268,12 +269,12 @@ export const Friends = () => {
 
                   <h3 className="text-2xl font-bold mb-1">{friend.userName}</h3>
                   <p className={`text-3xl font-black ${friend.netBalance > 0
-                      ? 'text-emerald-500'
-                      : friend.netBalance < 0
-                        ? 'text-orange-500'
-                        : 'opacity-30'
+                    ? 'text-emerald-500'
+                    : friend.netBalance < 0
+                      ? 'text-orange-500'
+                      : 'opacity-30'
                     }`}>
-                    {friend.netBalance > 0 ? '+' : friend.netBalance < 0 ? '-' : ''}{formatCurrency(friend.netBalance)}
+                    {friend.netBalance > 0 ? '+' : friend.netBalance < 0 ? '-' : ''}{formatPrice(friend.netBalance)}
                   </p>
                 </button>
 
@@ -294,7 +295,7 @@ export const Friends = () => {
                               <span className="font-medium opacity-80">{g.groupName}</span>
                             </div>
                             <span className={`font-bold ${g.balance > 0 ? 'text-emerald-500' : g.balance < 0 ? 'text-orange-500' : 'opacity-50'}`}>
-                              {g.balance > 0 ? '+' : g.balance < 0 ? '-' : ''}{formatCurrency(g.balance)}
+                              {g.balance > 0 ? '+' : g.balance < 0 ? '-' : ''}{formatPrice(g.balance)}
                             </span>
                           </div>
                         ))}
@@ -302,8 +303,8 @@ export const Friends = () => {
                           <p className="text-sm opacity-50 italic">No active groups</p>
                         )}
                         <button type="button" className={`w-full mt-4 py-2 text-sm font-bold flex items-center justify-center gap-2 transition-colors ${isNeo
-                            ? 'bg-black text-white hover:bg-gray-800 rounded-none'
-                            : 'bg-white/10 hover:bg-white/20 rounded-xl'
+                          ? 'bg-black text-white hover:bg-gray-800 rounded-none'
+                          : 'bg-white/10 hover:bg-white/20 rounded-xl'
                           }`}>
                           View Details <ArrowRight size={14} />
                         </button>

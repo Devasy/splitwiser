@@ -244,7 +244,11 @@ class TestEnrichMembersOptimized:
             user_id = str(ObjectId())
             user_ids.append(user_id)
             members.append(
-                {"userId": user_id, "role": "member", "joinedAt": f"2023-01-{i+1:02d}"}
+                {
+                    "userId": user_id,
+                    "role": "member",
+                    "joinedAt": f"2023-01-{i + 1:02d}",
+                }
             )
 
         mock_users = [
