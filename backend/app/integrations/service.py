@@ -71,21 +71,45 @@ class ImportService:
                 consumer_secret=consumer_secret,
             )
 
-            # Fetch data for preview
-            current_user = client.get_current_user()
-            friends = client.get_friends()
-            groups = client.get_groups()
+            # Fetch data for preview asynchronously
+            current_user_task = client.get_current_user_async()
+            friends_task = client.get_friends_async()
+            groups_task = client.get_groups_async()
+
+            # Wait for all tasks to complete
+            current_user, friends, groups = await asyncio.gather(
+                current_user_task, friends_task, groups_task
+            )
 
             # Transform user data
             splitwise_user = SplitwiseClient.transform_user(current_user)
 
-            # Build detailed group preview list
+            # Build detailed group preview list with concurrent expense fetching
             group_previews = []
             total_expenses = 0
 
-            for group in groups:
-                # Get expenses for this group to count them
-                group_expenses = client.get_expenses(group_id=group.getId(), limit=1000)
+            # Fetch expenses for all groups concurrently with rate limiting
+            semaphore = asyncio.Semaphore(5)  # Limit concurrent API calls
+
+            async def fetch_group_expenses(group):
+                async with semaphore:
+                    group_expenses = await client.get_expenses_async(
+                        group_id=group.getId(), limit=1000
+                    )
+                    return group, group_expenses
+
+            # Fetch all group expenses concurrently
+            group_expense_results = await asyncio.gather(
+                *[fetch_group_expenses(group) for group in groups],
+                return_exceptions=True,
+            )
+
+            for result in group_expense_results:
+                if isinstance(result, Exception):
+                    logger.error(f"Error fetching group expenses: {result}")
+                    continue
+
+                group, group_expenses = result
                 expense_count = len(group_expenses)
                 total_expenses += expense_count
 
@@ -671,6 +695,240 @@ class ImportService:
             except Exception as e:
                 await self._record_error(import_job_id, "group_import", str(e))
 
+    async def _process_single_expense(
+        self,
+        import_job_id: str,
+        user_id: str,
+        expense,
+        options: ImportOptions,
+    ):
+        """Process a single expense (to be called concurrently)."""
+        try:
+            # Skip deleted expenses if option is set
+            if not options.importArchivedExpenses:
+                deleted_at = (
+                    expense.getDeletedAt() if hasattr(expense, "getDeletedAt") else None
+                )
+                if deleted_at:
+                    # Increment progress counter to keep progress consistent
+                    await self._update_checkpoint(
+                        import_job_id,
+                        "expensesImported.completed",
+                        1,
+                        increment=True,
+                    )
+                    return
+
+            expense_data = SplitwiseClient.transform_expense(expense)
+
+            # Map group ID
+            group_mapping = await self.id_mappings.find_one(
+                {
+                    "importJobId": ObjectId(import_job_id),
+                    "entityType": "group",
+                    "splitwiseId": expense_data["groupId"],
+                }
+            )
+
+            if not group_mapping:
+                return  # Skip if group not found
+
+            # Check if expense already exists in Splitwiser
+            existing_expense = await self.expenses.find_one(
+                {
+                    "splitwiseExpenseId": expense_data["splitwiseExpenseId"],
+                    "groupId": group_mapping["splitwiserId"],
+                }
+            )
+
+            if existing_expense:
+                # Store mapping for this job so dependent entities (if any) can be linked
+                await self.id_mappings.insert_one(
+                    {
+                        "importJobId": ObjectId(import_job_id),
+                        "entityType": "expense",
+                        "splitwiseId": expense_data["splitwiseExpenseId"],
+                        "splitwiserId": str(existing_expense["_id"]),
+                        "createdAt": datetime.now(timezone.utc),
+                    }
+                )
+
+                # Update existing expense currency if needed
+                await self.expenses.update_one(
+                    {"_id": existing_expense["_id"]},
+                    {
+                        "$set": {
+                            "currency": expense_data.get("currency", "USD"),
+                            "updatedAt": datetime.now(timezone.utc),
+                        }
+                    },
+                )
+
+                # We still increment summary to show progress
+                await self._increment_summary(import_job_id, "expensesCreated")
+                return
+
+            # UNIFIED APPROACH: Use userShares to create settlements
+            # For EVERY expense (including payments), each user has:
+            #   netEffect = paidShare - owedShare
+            #   Positive = they are owed money (creditor)
+            #   Negative = they owe money (debtor)
+
+            user_shares = expense_data.get("userShares", [])
+
+            if not user_shares:
+                # Fallback: skip if no user shares data
+                logger.warning(
+                    f"Expense {expense_data['splitwiseExpenseId']} has no userShares, skipping"
+                )
+                await self._update_checkpoint(
+                    import_job_id, "expensesImported.completed", 1, increment=True
+                )
+                return
+
+            # Map Splitwise user IDs to Splitwiser user IDs
+            mapped_shares = []
+            for share in user_shares:
+                sw_user_id = share["userId"]
+                mapping = await self.id_mappings.find_one(
+                    {
+                        "importJobId": ObjectId(import_job_id),
+                        "entityType": "user",
+                        "splitwiseId": sw_user_id,
+                    }
+                )
+                if mapping:
+                    mapped_shares.append(
+                        {
+                            "userId": mapping["splitwiserId"],
+                            "userName": share["userName"],
+                            "paidShare": share["paidShare"],
+                            "owedShare": share["owedShare"],
+                            "netEffect": share["netEffect"],
+                        }
+                    )
+
+            # Separate into creditors (positive netEffect) and debtors (negative netEffect)
+            creditors = [
+                (s["userId"], s["userName"], s["netEffect"])
+                for s in mapped_shares
+                if s["netEffect"] > 0.01
+            ]
+            debtors = [
+                (s["userId"], s["userName"], -s["netEffect"])
+                for s in mapped_shares
+                if s["netEffect"] < -0.01
+            ]
+
+            # Create expense record
+            # Determine payer from paidShare, not from netEffect (creditors)
+            # netEffect can be 0 when someone pays only for themselves
+            # (e.g., paid $10, owes $10 -> netEffect = $0)
+            # We need to find who actually paid money
+            paid_by = max(mapped_shares, key=lambda s: s["paidShare"], default=None)
+            payer_id = (
+                paid_by["userId"] if paid_by and paid_by["paidShare"] > 0 else user_id
+            )
+            new_expense = {
+                "_id": ObjectId(),
+                "groupId": group_mapping["splitwiserId"],
+                "createdBy": user_id,
+                "paidBy": payer_id,
+                "description": expense_data["description"],
+                "amount": expense_data["amount"],
+                "splits": [
+                    {
+                        "userId": s["userId"],
+                        "amount": s["owedShare"],
+                        "userName": s["userName"],
+                    }
+                    for s in mapped_shares
+                    if s["owedShare"] > 0
+                ],
+                "splitType": expense_data["splitType"],
+                "tags": [t for t in (expense_data.get("tags") or []) if t is not None],
+                "receiptUrls": (
+                    [
+                        r
+                        for r in (expense_data.get("receiptUrls") or [])
+                        if r is not None
+                    ]
+                    if options.importReceipts
+                    else []
+                ),
+                "comments": [],
+                "history": [],
+                "currency": expense_data.get("currency", "USD"),
+                "splitwiseExpenseId": expense_data["splitwiseExpenseId"],
+                "isPayment": expense_data.get("isPayment", False),
+                "importedFrom": "splitwise",
+                "importedAt": datetime.now(timezone.utc),
+                "updatedAt": datetime.now(timezone.utc),
+                "createdAt": (
+                    datetime.fromisoformat(expense_data["date"].replace("Z", "+00:00"))
+                    if expense_data.get("date")
+                    else datetime.now(timezone.utc)
+                ),
+            }
+
+            await self.expenses.insert_one(new_expense)
+
+            # Create settlements: each debtor owes each creditor proportionally
+            # For simplicity, we match debtors to creditors in order (greedy approach)
+            creditor_idx = 0
+            remaining_credit = list(creditors)  # Make mutable copy
+
+            for debtor_id, debtor_name, debt_amount in debtors:
+                remaining_debt = debt_amount
+
+                while remaining_debt > 0.01 and creditor_idx < len(remaining_credit):
+                    creditor_id, creditor_name, credit = remaining_credit[creditor_idx]
+
+                    # Match the minimum of debt and credit
+                    settlement_amount = min(remaining_debt, credit)
+
+                    if settlement_amount > 0.01:
+                        settlement_doc = {
+                            "_id": ObjectId(),
+                            "expenseId": str(new_expense["_id"]),
+                            "groupId": group_mapping["splitwiserId"],
+                            # payerId = debtor (person who OWES), payeeId = creditor (person OWED)
+                            "payerId": debtor_id,
+                            "payeeId": creditor_id,
+                            "amount": round(settlement_amount, 2),
+                            "currency": expense_data.get("currency", "USD"),
+                            "payerName": debtor_name,
+                            "payeeName": creditor_name,
+                            "status": "pending",
+                            "description": f"Share for {expense_data['description']}",
+                            "createdAt": datetime.now(timezone.utc),
+                            "importedFrom": "splitwise",
+                            "importedAt": datetime.now(timezone.utc),
+                        }
+
+                        await self.db["settlements"].insert_one(settlement_doc)
+                        await self._increment_summary(
+                            import_job_id, "settlementsCreated"
+                        )
+
+                    remaining_debt -= settlement_amount
+                    remaining_credit[creditor_idx] = (
+                        creditor_id,
+                        creditor_name,
+                        credit - settlement_amount,
+                    )
+
+                    if remaining_credit[creditor_idx][2] < 0.01:
+                        creditor_idx += 1
+
+            await self._increment_summary(import_job_id, "expensesCreated")
+            await self._update_checkpoint(
+                import_job_id, "expensesImported.completed", 1, increment=True
+            )
+
+        except Exception as e:
+            await self._record_error(import_job_id, "expense_import", str(e))
+
     async def _import_expenses(
         self,
         import_job_id: str,
@@ -678,252 +936,29 @@ class ImportService:
         client: SplitwiseClient,
         options: ImportOptions,
     ):
-        """Import expenses."""
-        # Get all expenses
-        all_expenses = client.get_expenses(limit=1000)
+        """Import expenses with concurrent processing for better performance."""
+        # Get all expenses asynchronously
+        all_expenses = await client.get_expenses_async(limit=1000)
 
         await self._update_checkpoint(
             import_job_id, "expensesImported.total", len(all_expenses)
         )
 
-        for expense in all_expenses:
-            try:
-                # Skip deleted expenses if option is set
-                if not options.importArchivedExpenses:
-                    deleted_at = (
-                        expense.getDeletedAt()
-                        if hasattr(expense, "getDeletedAt")
-                        else None
-                    )
-                    if deleted_at:
-                        # Increment progress counter to keep progress consistent
-                        await self._update_checkpoint(
-                            import_job_id,
-                            "expensesImported.completed",
-                            1,
-                            increment=True,
-                        )
-                        continue
+        # Process expenses concurrently with a semaphore to limit concurrency
+        # Limit to 10 concurrent operations for free-tier Railway serverless
+        semaphore = asyncio.Semaphore(10)
 
-                expense_data = SplitwiseClient.transform_expense(expense)
-
-                # Map group ID
-                group_mapping = await self.id_mappings.find_one(
-                    {
-                        "importJobId": ObjectId(import_job_id),
-                        "entityType": "group",
-                        "splitwiseId": expense_data["groupId"],
-                    }
+        async def process_with_semaphore(expense):
+            async with semaphore:
+                await self._process_single_expense(
+                    import_job_id, user_id, expense, options
                 )
 
-                if not group_mapping:
-                    continue  # Skip if group not found
-
-                # Check if expense already exists in Splitwiser
-                existing_expense = await self.expenses.find_one(
-                    {
-                        "splitwiseExpenseId": expense_data["splitwiseExpenseId"],
-                        "groupId": group_mapping["splitwiserId"],
-                    }
-                )
-
-                if existing_expense:
-                    # Store mapping for this job so dependent entities (if any) can be linked
-                    await self.id_mappings.insert_one(
-                        {
-                            "importJobId": ObjectId(import_job_id),
-                            "entityType": "expense",
-                            "splitwiseId": expense_data["splitwiseExpenseId"],
-                            "splitwiserId": str(existing_expense["_id"]),
-                            "createdAt": datetime.now(timezone.utc),
-                        }
-                    )
-
-                    # Update existing expense currency if needed
-                    await self.expenses.update_one(
-                        {"_id": existing_expense["_id"]},
-                        {
-                            "$set": {
-                                "currency": expense_data.get("currency", "USD"),
-                                "updatedAt": datetime.now(timezone.utc),
-                            }
-                        },
-                    )
-
-                    # We still increment summary to show progress
-                    await self._increment_summary(import_job_id, "expensesCreated")
-                    continue
-
-                # UNIFIED APPROACH: Use userShares to create settlements
-                # For EVERY expense (including payments), each user has:
-                #   netEffect = paidShare - owedShare
-                #   Positive = they are owed money (creditor)
-                #   Negative = they owe money (debtor)
-
-                user_shares = expense_data.get("userShares", [])
-
-                if not user_shares:
-                    # Fallback: skip if no user shares data
-                    logger.warning(
-                        f"Expense {expense_data['splitwiseExpenseId']} has no userShares, skipping"
-                    )
-                    await self._update_checkpoint(
-                        import_job_id, "expensesImported.completed", 1, increment=True
-                    )
-                    continue
-
-                # Map Splitwise user IDs to Splitwiser user IDs
-                mapped_shares = []
-                for share in user_shares:
-                    sw_user_id = share["userId"]
-                    mapping = await self.id_mappings.find_one(
-                        {
-                            "importJobId": ObjectId(import_job_id),
-                            "entityType": "user",
-                            "splitwiseId": sw_user_id,
-                        }
-                    )
-                    if mapping:
-                        mapped_shares.append(
-                            {
-                                "userId": mapping["splitwiserId"],
-                                "userName": share["userName"],
-                                "paidShare": share["paidShare"],
-                                "owedShare": share["owedShare"],
-                                "netEffect": share["netEffect"],
-                            }
-                        )
-
-                # Separate into creditors (positive netEffect) and debtors (negative netEffect)
-                creditors = [
-                    (s["userId"], s["userName"], s["netEffect"])
-                    for s in mapped_shares
-                    if s["netEffect"] > 0.01
-                ]
-                debtors = [
-                    (s["userId"], s["userName"], -s["netEffect"])
-                    for s in mapped_shares
-                    if s["netEffect"] < -0.01
-                ]
-
-                # Create expense record
-                # Determine payer from paidShare, not from netEffect (creditors)
-                # netEffect can be 0 when someone pays only for themselves
-                # (e.g., paid $10, owes $10 -> netEffect = $0)
-                # We need to find who actually paid money
-                paid_by = max(mapped_shares, key=lambda s: s["paidShare"], default=None)
-                payer_id = (
-                    paid_by["userId"]
-                    if paid_by and paid_by["paidShare"] > 0
-                    else user_id
-                )
-                new_expense = {
-                    "_id": ObjectId(),
-                    "groupId": group_mapping["splitwiserId"],
-                    "createdBy": user_id,
-                    "paidBy": payer_id,
-                    "description": expense_data["description"],
-                    "amount": expense_data["amount"],
-                    "splits": [
-                        {
-                            "userId": s["userId"],
-                            "amount": s["owedShare"],
-                            "userName": s["userName"],
-                        }
-                        for s in mapped_shares
-                        if s["owedShare"] > 0
-                    ],
-                    "splitType": expense_data["splitType"],
-                    "tags": [
-                        t for t in (expense_data.get("tags") or []) if t is not None
-                    ],
-                    "receiptUrls": (
-                        [
-                            r
-                            for r in (expense_data.get("receiptUrls") or [])
-                            if r is not None
-                        ]
-                        if options.importReceipts
-                        else []
-                    ),
-                    "comments": [],
-                    "history": [],
-                    "currency": expense_data.get("currency", "USD"),
-                    "splitwiseExpenseId": expense_data["splitwiseExpenseId"],
-                    "isPayment": expense_data.get("isPayment", False),
-                    "importedFrom": "splitwise",
-                    "importedAt": datetime.now(timezone.utc),
-                    "updatedAt": datetime.now(timezone.utc),
-                    "createdAt": (
-                        datetime.fromisoformat(
-                            expense_data["date"].replace("Z", "+00:00")
-                        )
-                        if expense_data.get("date")
-                        else datetime.now(timezone.utc)
-                    ),
-                }
-
-                await self.expenses.insert_one(new_expense)
-
-                # Create settlements: each debtor owes each creditor proportionally
-                # For simplicity, we match debtors to creditors in order (greedy approach)
-                creditor_idx = 0
-                remaining_credit = list(creditors)  # Make mutable copy
-
-                for debtor_id, debtor_name, debt_amount in debtors:
-                    remaining_debt = debt_amount
-
-                    while remaining_debt > 0.01 and creditor_idx < len(
-                        remaining_credit
-                    ):
-                        creditor_id, creditor_name, credit = remaining_credit[
-                            creditor_idx
-                        ]
-
-                        # Match the minimum of debt and credit
-                        settlement_amount = min(remaining_debt, credit)
-
-                        if settlement_amount > 0.01:
-                            settlement_doc = {
-                                "_id": ObjectId(),
-                                "expenseId": str(new_expense["_id"]),
-                                "groupId": group_mapping["splitwiserId"],
-                                # payerId = debtor (person who OWES), payeeId = creditor (person OWED)
-                                "payerId": debtor_id,
-                                "payeeId": creditor_id,
-                                "amount": round(settlement_amount, 2),
-                                "currency": expense_data.get("currency", "USD"),
-                                "payerName": debtor_name,
-                                "payeeName": creditor_name,
-                                "status": "pending",
-                                "description": f"Share for {expense_data['description']}",
-                                "createdAt": datetime.now(timezone.utc),
-                                "importedFrom": "splitwise",
-                                "importedAt": datetime.now(timezone.utc),
-                            }
-
-                            await self.db["settlements"].insert_one(settlement_doc)
-                            await self._increment_summary(
-                                import_job_id, "settlementsCreated"
-                            )
-
-                        remaining_debt -= settlement_amount
-                        remaining_credit[creditor_idx] = (
-                            creditor_id,
-                            creditor_name,
-                            credit - settlement_amount,
-                        )
-
-                        if remaining_credit[creditor_idx][2] < 0.01:
-                            creditor_idx += 1
-
-                await self._increment_summary(import_job_id, "expensesCreated")
-                await self._update_checkpoint(
-                    import_job_id, "expensesImported.completed", 1, increment=True
-                )
-
-            except Exception as e:
-                await self._record_error(import_job_id, "expense_import", str(e))
+        # Process all expenses concurrently
+        await asyncio.gather(
+            *[process_with_semaphore(expense) for expense in all_expenses],
+            return_exceptions=True,
+        )
 
     async def _update_checkpoint(
         self, import_job_id: str, field: str, value, increment: bool = False

@@ -4,6 +4,7 @@ Splitwise API client wrapper.
 Handles authentication and API requests to Splitwise.
 """
 
+import asyncio
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
@@ -54,6 +55,37 @@ class SplitwiseClient:
         if group_id:
             return self.sObj.getExpenses(group_id=group_id, limit=limit)
         return self.sObj.getExpenses(limit=limit)
+
+    async def get_current_user_async(self):
+        """Get current authenticated user (async)."""
+        return await asyncio.to_thread(self.sObj.getCurrentUser)
+
+    async def get_friends_async(self):
+        """Get list of friends (async)."""
+        return await asyncio.to_thread(self.sObj.getFriends)
+
+    async def get_groups_async(self):
+        """Get list of groups (async)."""
+        return await asyncio.to_thread(self.sObj.getGroups)
+
+    async def get_expenses_async(
+        self, group_id: Optional[int] = None, limit: int = 1000
+    ):
+        """
+        Get expenses, optionally filtered by group (async).
+
+        Args:
+            group_id: Optional group ID to filter
+            limit: Maximum number of expenses to fetch
+
+        Returns:
+            List of expense objects
+        """
+        if group_id:
+            return await asyncio.to_thread(
+                self.sObj.getExpenses, group_id=group_id, limit=limit
+            )
+        return await asyncio.to_thread(self.sObj.getExpenses, limit=limit)
 
     @staticmethod
     def transform_user(user) -> Dict[str, Any]:
