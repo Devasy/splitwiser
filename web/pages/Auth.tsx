@@ -210,9 +210,9 @@ export const Auth = () => {
               type="button"
               onClick={handleGoogleSignIn}
               disabled={googleLoading}
-              className={`w-full flex items-center justify-center gap-3 p-3 font-bold transition-all ${isNeo
-                ? 'bg-white border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] rounded-none'
-                : 'bg-white text-black hover:bg-gray-50 border border-gray-200 shadow-sm rounded-xl'
+              className={`w-full flex items-center justify-center gap-3 p-3 font-bold transition-all outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${isNeo
+                ? 'focus-visible:ring-black bg-white border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] rounded-none'
+                : 'focus-visible:ring-blue-500 bg-white text-black hover:bg-gray-50 border border-gray-200 shadow-sm rounded-xl'
                 }`}
             >
               {googleLoading ? (
@@ -327,7 +327,11 @@ export const Auth = () => {
                   setFieldErrors({});
                   setError('');
                 }}
-                className="text-sm font-bold hover:underline opacity-70 hover:opacity-100 transition-opacity"
+                className={`text-sm font-bold hover:underline opacity-70 hover:opacity-100 transition-opacity outline-none rounded-sm ${
+                  isNeo
+                    ? 'focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2'
+                    : 'focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2'
+                }`}
               >
                 {isLogin
                   ? "Don't have an account? Sign Up"

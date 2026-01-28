@@ -7,6 +7,12 @@
 ## [Unreleased]
 
 ### Added
+- **Consistent Focus States:** Implemented high-contrast `focus-visible` styles across interactive elements to improve keyboard accessibility.
+  - **Features:**
+    - Dual-theme support: Black rings for Neobrutalism, Blue rings for Glassmorphism.
+    - Applied to `Button` component, Modal close buttons, Toast dismiss buttons, and Auth page actions (Google button, toggle links).
+  - **Technical:** Used Tailwind's `focus-visible:` modifiers with `ring`, `ring-offset`, and theme-specific colors.
+
 - **Confirmation Dialog System:** Replaced browser's native `alert`/`confirm` with a custom, accessible, and themed modal system.
   - **Features:**
     - Dual-theme support (Glassmorphism & Neobrutalism).

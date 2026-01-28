@@ -18,9 +18,9 @@ export const Button: React.FC<ButtonProps> = ({
   disabled,
   ...props
 }) => {
-  const { style } = useTheme();
+  const { style, mode } = useTheme();
 
-  const baseStyles = "transition-all duration-200 font-bold flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed";
+  const baseStyles = "transition-all duration-200 font-bold flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed outline-none focus-visible:ring-2 focus-visible:ring-offset-2";
 
   const sizeStyles = {
     sm: "px-3 py-1.5 text-sm",
@@ -31,7 +31,7 @@ export const Button: React.FC<ButtonProps> = ({
   let themeStyles = "";
 
   if (style === THEMES.NEOBRUTALISM) {
-    themeStyles = "border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-[4px] active:translate-y-[4px] active:shadow-none rounded-none uppercase tracking-wider font-mono";
+    themeStyles = "border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-[4px] active:translate-y-[4px] active:shadow-none rounded-none uppercase tracking-wider font-mono focus-visible:ring-black";
 
     if (variant === 'primary') themeStyles += " bg-neo-main text-white";
     if (variant === 'secondary') themeStyles += " bg-neo-second text-black";
@@ -40,7 +40,7 @@ export const Button: React.FC<ButtonProps> = ({
 
   } else {
     // Glassmorphism
-    themeStyles = "rounded-xl backdrop-blur-md border border-white/20 shadow-lg hover:shadow-xl active:scale-95";
+    themeStyles = `rounded-xl backdrop-blur-md border border-white/20 shadow-lg hover:shadow-xl active:scale-95 focus-visible:ring-blue-400 ${mode === 'dark' ? 'focus-visible:ring-offset-gray-900' : 'focus-visible:ring-offset-white'}`;
 
     if (variant === 'primary') themeStyles += " bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-blue-500/30";
     if (variant === 'secondary') themeStyles += " bg-white/10 text-white hover:bg-white/20";
