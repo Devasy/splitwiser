@@ -77,12 +77,12 @@
 
 ### Web
 
-- [ ] **[style]** Consistent hover/focus states across all buttons
-  - Files: `web/components/ui/Button.tsx`, usage across pages
+- [x] **[style]** Consistent hover/focus states across all buttons
+  - Files: `web/components/ui/Button.tsx`, `web/components/ui/Modal.tsx`, `web/components/ui/Toast.tsx`, `web/pages/Auth.tsx`
   - Context: Ensure all buttons have proper hover + focus-visible styles
   - Impact: Professional feel, keyboard users know where they are
   - Size: ~35 lines
-  - Added: 2026-01-01
+  - Completed: 2026-01-22
 
 ### Mobile
 
