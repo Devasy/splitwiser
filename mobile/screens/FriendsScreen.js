@@ -1,6 +1,6 @@
 import { useIsFocused } from "@react-navigation/native";
 import { useContext, useEffect, useRef, useState } from "react";
-import { Alert, Animated, FlatList, StyleSheet, View } from "react-native";
+import { Alert, Animated, FlatList, RefreshControl, StyleSheet, View } from "react-native";
 import {
   Appbar,
   Avatar,
@@ -8,53 +8,64 @@ import {
   IconButton,
   List,
   Text,
+  useTheme,
 } from "react-native-paper";
+import * as Haptics from "expo-haptics";
 import { getFriendsBalance, getGroups } from "../api/groups";
 import { AuthContext } from "../context/AuthContext";
 import { formatCurrency } from "../utils/currency";
 
 const FriendsScreen = () => {
   const { token, user } = useContext(AuthContext);
+  const theme = useTheme();
   const [friends, setFriends] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [showTooltip, setShowTooltip] = useState(true);
   const isFocused = useIsFocused();
 
+  const fetchData = async (showLoading = true) => {
+    if (showLoading) setIsLoading(true);
+    try {
+      // Fetch friends balance + groups concurrently for group icons
+      const friendsResponse = await getFriendsBalance();
+      const friendsData = friendsResponse.data.friendsBalance || [];
+      const groupsResponse = await getGroups();
+      const groups = groupsResponse?.data?.groups || [];
+      const groupMeta = new Map(
+        groups.map((g) => [g._id, { name: g.name, imageUrl: g.imageUrl }])
+      );
+
+      const transformedFriends = friendsData.map((friend) => ({
+        id: friend.userId,
+        name: friend.userName,
+        imageUrl: friend.userImageUrl || null,
+        netBalance: friend.netBalance,
+        groups: (friend.breakdown || []).map((group) => ({
+          id: group.groupId,
+          name: group.groupName,
+          balance: group.balance,
+          imageUrl: groupMeta.get(group.groupId)?.imageUrl || null,
+        })),
+      }));
+
+      setFriends(transformedFriends);
+    } catch (error) {
+      console.error("Failed to fetch friends balance data:", error);
+      Alert.alert("Error", "Failed to load friends balance data.");
+    } finally {
+      if (showLoading) setIsLoading(false);
+    }
+  };
+
+  const onRefresh = async () => {
+    setIsRefreshing(true);
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    await fetchData(false);
+    setIsRefreshing(false);
+  };
+
   useEffect(() => {
-    const fetchData = async () => {
-      setIsLoading(true);
-      try {
-        // Fetch friends balance + groups concurrently for group icons
-        const friendsResponse = await getFriendsBalance();
-        const friendsData = friendsResponse.data.friendsBalance || [];
-        const groupsResponse = await getGroups();
-        const groups = groupsResponse?.data?.groups || [];
-        const groupMeta = new Map(
-          groups.map((g) => [g._id, { name: g.name, imageUrl: g.imageUrl }])
-        );
-
-        const transformedFriends = friendsData.map((friend) => ({
-          id: friend.userId,
-          name: friend.userName,
-          imageUrl: friend.userImageUrl || null,
-          netBalance: friend.netBalance,
-          groups: (friend.breakdown || []).map((group) => ({
-            id: group.groupId,
-            name: group.groupName,
-            balance: group.balance,
-            imageUrl: groupMeta.get(group.groupId)?.imageUrl || null,
-          })),
-        }));
-
-        setFriends(transformedFriends);
-      } catch (error) {
-        console.error("Failed to fetch friends balance data:", error);
-        Alert.alert("Error", "Failed to load friends balance data.");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     if (token && isFocused) {
       fetchData();
     }
@@ -234,6 +245,14 @@ const FriendsScreen = () => {
         ItemSeparatorComponent={Divider}
         ListEmptyComponent={
           <Text style={styles.emptyText}>No balances with friends yet.</Text>
+        }
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={onRefresh}
+            colors={[theme.colors.primary]}
+            tintColor={theme.colors.primary}
+          />
         }
       />
     </View>

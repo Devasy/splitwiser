@@ -1,5 +1,5 @@
 import { useContext, useEffect, useState } from "react";
-import { Alert, FlatList, StyleSheet, View } from "react-native";
+import { Alert, FlatList, RefreshControl, StyleSheet, View } from "react-native";
 import {
   ActivityIndicator,
   Appbar,
@@ -10,15 +10,19 @@ import {
   Portal,
   Text,
   TextInput,
+  useTheme,
 } from "react-native-paper";
+import * as Haptics from "expo-haptics";
 import { createGroup, getGroups, getOptimizedSettlements } from "../api/groups";
 import { AuthContext } from "../context/AuthContext";
 import { formatCurrency, getCurrencySymbol } from "../utils/currency";
 
 const HomeScreen = ({ navigation }) => {
   const { token, logout, user } = useContext(AuthContext);
+  const theme = useTheme();
   const [groups, setGroups] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [groupSettlements, setGroupSettlements] = useState({}); // Track settlement status for each group
 
   // State for the Create Group modal
@@ -66,9 +70,9 @@ const HomeScreen = ({ navigation }) => {
     }
   };
 
-  const fetchGroups = async () => {
+  const fetchGroups = async (showLoading = true) => {
     try {
-      setIsLoading(true);
+      if (showLoading) setIsLoading(true);
       const response = await getGroups();
       const groupsList = response.data.groups;
       setGroups(groupsList);
@@ -91,8 +95,15 @@ const HomeScreen = ({ navigation }) => {
       console.error("Failed to fetch groups:", error);
       Alert.alert("Error", "Failed to fetch groups.");
     } finally {
-      setIsLoading(false);
+      if (showLoading) setIsLoading(false);
     }
+  };
+
+  const onRefresh = async () => {
+    setIsRefreshing(true);
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    await fetchGroups(false);
+    setIsRefreshing(false);
   };
 
   useEffect(() => {
@@ -246,8 +257,14 @@ const HomeScreen = ({ navigation }) => {
               No groups found. Create or join one!
             </Text>
           }
-          onRefresh={fetchGroups}
-          refreshing={isLoading}
+          refreshControl={
+            <RefreshControl
+              refreshing={isRefreshing}
+              onRefresh={onRefresh}
+              colors={[theme.colors.primary]}
+              tintColor={theme.colors.primary}
+            />
+          }
         />
       )}
     </View>
