@@ -4,7 +4,12 @@ from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from app.expenses.schemas import ExpenseCreateRequest, ExpenseSplit, SplitType, OptimizedSettlement
+from app.expenses.schemas import (
+    ExpenseCreateRequest,
+    ExpenseSplit,
+    OptimizedSettlement,
+    SplitType,
+)
 from app.expenses.service import ExpenseService
 from bson import ObjectId, errors
 from fastapi import HTTPException
@@ -1615,7 +1620,7 @@ async def test_get_friends_balance_summary_success(expense_service):
                         toUserId=friend1_id_str,
                         fromUserName="Main User",
                         toUserName="Friend One",
-                        amount=50.0
+                        amount=50.0,
                     )
                 ]
             elif group_id == group2_id:
@@ -1625,15 +1630,15 @@ async def test_get_friends_balance_summary_success(expense_service):
                         toUserId=user_id_str,
                         fromUserName="Friend One",
                         toUserName="Main User",
-                        amount=30.0
+                        amount=30.0,
                     ),
                     OptimizedSettlement(
                         fromUserId=user_id_str,
                         toUserId=friend2_id_str,
                         fromUserName="Main User",
                         toUserName="Friend Two",
-                        amount=70.0
-                    )
+                        amount=70.0,
+                    ),
                 ]
             return []
 
@@ -1650,8 +1655,12 @@ async def test_get_friends_balance_summary_success(expense_service):
 
         assert len(friends_balance) == 2
 
-        friend1_summary = next(f for f in friends_balance if f["userId"] == friend1_id_str)
-        friend2_summary = next(f for f in friends_balance if f["userId"] == friend2_id_str)
+        friend1_summary = next(
+            f for f in friends_balance if f["userId"] == friend1_id_str
+        )
+        friend2_summary = next(
+            f for f in friends_balance if f["userId"] == friend2_id_str
+        )
 
         # Friend 1 calculation:
         # G1: Main owes F1 50. Balance for Main w.r.t F1: -50 (Main owes)
@@ -1724,19 +1733,19 @@ async def test_get_overall_balance_summary_success(expense_service):
             "name": "Group One",
             "members": [{"userId": user_id}],
             # Cached balances are None, so it triggers calculation
-            "cachedBalances": None
+            "cachedBalances": None,
         },
         {
             "_id": ObjectId(group2_id),
             "name": "Group Two",
             "members": [{"userId": user_id}],
-            "cachedBalances": None
+            "cachedBalances": None,
         },
         {
             "_id": ObjectId(group3_id),
             "name": "Group Three",
             "members": [{"userId": user_id}],
-            "cachedBalances": None
+            "cachedBalances": None,
         },
     ]
 
@@ -1754,11 +1763,11 @@ async def test_get_overall_balance_summary_success(expense_service):
         # Mock recalculate return values
         async def mock_recalculate_side_effect(group_id, *args, **kwargs):
             if group_id == group1_id:
-                return {user_id: 80.0} # Owed 80
+                return {user_id: 80.0}  # Owed 80
             elif group_id == group2_id:
-                return {user_id: -100.0} # Owes 100
+                return {user_id: -100.0}  # Owes 100
             elif group_id == group3_id:
-                return {user_id: 0.0} # Even
+                return {user_id: 0.0}  # Even
             return {}
 
         mock_recalculate.side_effect = mock_recalculate_side_effect
@@ -1897,9 +1906,7 @@ async def test_get_group_analytics_success(expense_service, mock_group_data):
         mock_mongodb.database = mock_db
 
         # Mock group membership check
-        mock_db.groups.find_one = AsyncMock(
-            return_value=current_test_mock_group_data
-        )
+        mock_db.groups.find_one = AsyncMock(return_value=current_test_mock_group_data)
         # Mock expenses find for the period
         mock_expenses_cursor = AsyncMock()
         mock_expenses_cursor.to_list.return_value = mock_expenses_in_period
@@ -1976,8 +1983,8 @@ async def test_get_friends_balance_summary_aggregation_error(expense_service):
         # Mock failure
         mock_calc_optimized.side_effect = Exception("Calculation failed")
 
-        with pytest.raises(Exception): # The service doesn't catch all exceptions
-             await expense_service.get_friends_balance_summary(user_id_str)
+        with pytest.raises(Exception):  # The service doesn't catch all exceptions
+            await expense_service.get_friends_balance_summary(user_id_str)
 
 
 @pytest.mark.asyncio
@@ -2012,7 +2019,7 @@ async def test_get_friends_balance_summary_user_fetch_error(expense_service):
                 toUserId=friend_id_str,
                 fromUserName="Main",
                 toUserName="Friend",
-                amount=50.0
+                amount=50.0,
             )
         ]
 
@@ -2098,7 +2105,7 @@ async def test_get_friends_balance_summary_negative_balance(expense_service):
                 toUserId=friend_id_str,
                 fromUserName="Main",
                 toUserName="Friend",
-                amount=100.0
+                amount=100.0,
             )
         ]
 
