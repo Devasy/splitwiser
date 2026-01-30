@@ -50,12 +50,12 @@
 
 ### Mobile
 
-- [ ] **[ux]** Pull-to-refresh with haptic feedback on all list screens
-  - Files: `mobile/screens/HomeScreen.js`, `mobile/screens/GroupDetailsScreen.js`
+- [x] **[ux]** Pull-to-refresh with haptic feedback on all list screens
+  - Completed: 2026-01-21
+  - Files: `mobile/screens/HomeScreen.js`, `mobile/screens/GroupDetailsScreen.js`, `mobile/screens/FriendsScreen.js`
   - Context: Add RefreshControl + Expo Haptics to main lists
   - Impact: Native feel, users can easily refresh data
-  - Size: ~45 lines
-  - Added: 2026-01-01
+  - Size: ~150 lines
 
 - [ ] **[ux]** Complete skeleton loading for HomeScreen groups
   - File: `mobile/screens/HomeScreen.js`
@@ -158,5 +158,7 @@
   - Completed: 2026-01-14
   - Files modified: `web/components/ErrorBoundary.tsx`, `web/App.tsx`
   - Impact: App doesn't crash, users can recover
-
-_No tasks completed yet. Move tasks here after completion._
+- [x] **[ux]** Pull-to-refresh with haptic feedback on all list screens
+  - Completed: 2026-01-21
+  - Files modified: `mobile/screens/HomeScreen.js`, `mobile/screens/GroupDetailsScreen.js`, `mobile/screens/FriendsScreen.js`
+  - Impact: Native feel, users can easily refresh data

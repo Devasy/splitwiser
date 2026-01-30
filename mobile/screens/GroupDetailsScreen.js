@@ -1,5 +1,5 @@
 import { useContext, useEffect, useState } from "react";
-import { Alert, FlatList, StyleSheet, Text, View } from "react-native";
+import { Alert, FlatList, RefreshControl, StyleSheet, Text, View } from "react-native";
 import {
   ActivityIndicator,
   Card,
@@ -7,7 +7,9 @@ import {
   IconButton,
   Paragraph,
   Title,
+  useTheme,
 } from "react-native-paper";
+import * as Haptics from "expo-haptics";
 import {
   getGroupExpenses,
   getGroupMembers,
@@ -18,10 +20,12 @@ import { AuthContext } from "../context/AuthContext";
 const GroupDetailsScreen = ({ route, navigation }) => {
   const { groupId, groupName } = route.params;
   const { token, user } = useContext(AuthContext);
+  const theme = useTheme();
   const [members, setMembers] = useState([]);
   const [expenses, setExpenses] = useState([]);
   const [settlements, setSettlements] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Currency configuration - can be made configurable later
   const currency = "₹"; // Default to INR, can be changed to '$' for USD
@@ -29,9 +33,9 @@ const GroupDetailsScreen = ({ route, navigation }) => {
   // Helper function to format currency amounts
   const formatCurrency = (amount) => `${currency}${amount.toFixed(2)}`;
 
-  const fetchData = async () => {
+  const fetchData = async (showLoading = true) => {
     try {
-      setIsLoading(true);
+      if (showLoading) setIsLoading(true);
       // Fetch members, expenses, and settlements in parallel
       const [membersResponse, expensesResponse, settlementsResponse] =
         await Promise.all([
@@ -46,8 +50,15 @@ const GroupDetailsScreen = ({ route, navigation }) => {
       console.error("Failed to fetch group details:", error);
       Alert.alert("Error", "Failed to fetch group details.");
     } finally {
-      setIsLoading(false);
+      if (showLoading) setIsLoading(false);
     }
+  };
+
+  const onRefresh = async () => {
+    setIsRefreshing(true);
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    await fetchData(false);
+    setIsRefreshing(false);
   };
 
   useEffect(() => {
@@ -202,6 +213,14 @@ const GroupDetailsScreen = ({ route, navigation }) => {
           <Text style={styles.emptyText}>No expenses recorded yet.</Text>
         }
         contentContainerStyle={{ paddingBottom: 80 }} // To avoid FAB overlap
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={onRefresh}
+            colors={[theme.colors.primary]}
+            tintColor={theme.colors.primary}
+          />
+        }
       />
 
       <FAB
@@ -232,8 +251,7 @@ const styles = StyleSheet.create({
   expensesTitle: {
     marginTop: 16,
     marginBottom: 8,
-    fontSize: 20,
-    fontWeight: "bold",
+    fontSize: 20,    fontWeight: "bold",
   },
   memberText: {
     fontSize: 16,
