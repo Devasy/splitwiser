@@ -56,9 +56,16 @@ const GroupDetailsScreen = ({ route, navigation }) => {
 
   const onRefresh = async () => {
     setIsRefreshing(true);
-    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    await fetchData(false);
-    setIsRefreshing(false);
+    try {
+      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    } catch (error) {
+      // Ignore haptics errors
+    }
+    try {
+      await fetchData(false);
+    } finally {
+      setIsRefreshing(false);
+    }
   };
 
   useEffect(() => {

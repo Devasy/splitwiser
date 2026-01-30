@@ -101,9 +101,16 @@ const HomeScreen = ({ navigation }) => {
 
   const onRefresh = async () => {
     setIsRefreshing(true);
-    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    await fetchGroups(false);
-    setIsRefreshing(false);
+    try {
+      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    } catch (error) {
+      // Ignore haptics errors
+    }
+    try {
+      await fetchGroups(false);
+    } finally {
+      setIsRefreshing(false);
+    }
   };
 
   useEffect(() => {
