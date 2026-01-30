@@ -7,6 +7,14 @@
 ## [Unreleased]
 
 ### Added
+- **Mobile Pull-to-Refresh:** Implemented native pull-to-refresh interactions with haptic feedback for key lists.
+  - **Features:**
+    - Integrated `RefreshControl` into `HomeScreen`, `FriendsScreen`, and `GroupDetailsScreen`.
+    - Added haptic feedback (`Haptics.ImpactFeedbackStyle.Light`) on refresh trigger.
+    - Separated 'isRefreshing' state from 'isLoading' to prevent full-screen spinner interruptions.
+    - Themed the refresh spinner using `react-native-paper`'s primary color.
+  - **Technical:** Installed `expo-haptics`. Refactored data fetching logic to support silent updates.
+
 - **Confirmation Dialog System:** Replaced browser's native `alert`/`confirm` with a custom, accessible, and themed modal system.
   - **Features:**
     - Dual-theme support (Glassmorphism & Neobrutalism).
