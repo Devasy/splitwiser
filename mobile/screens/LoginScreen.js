@@ -32,6 +32,7 @@ const LoginScreen = ({ navigation }) => {
         style={styles.input}
         keyboardType="email-address"
         autoCapitalize="none"
+        accessibilityLabel="Email address"
       />
       <TextInput
         label="Password"
@@ -39,6 +40,7 @@ const LoginScreen = ({ navigation }) => {
         onChangeText={setPassword}
         style={styles.input}
         secureTextEntry
+        accessibilityLabel="Password"
       />
       <Button
         mode="contained"
@@ -46,10 +48,18 @@ const LoginScreen = ({ navigation }) => {
         style={styles.button}
         loading={isLoading}
         disabled={isLoading}
+        accessibilityLabel="Login to your account"
+        accessibilityRole="button"
       >
         Login
       </Button>
-      <Button onPress={() => navigation.navigate('Signup')} style={styles.button}>
+      <Button
+        onPress={() => navigation.navigate("Signup")}
+        style={styles.button}
+        accessibilityLabel="Go to sign up screen"
+        accessibilityRole="button"
+        accessibilityHint="Navigates to the account creation screen"
+      >
         Don't have an account? Sign Up
       </Button>
     </View>

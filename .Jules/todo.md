@@ -64,7 +64,8 @@
   - Size: ~40 lines
   - Added: 2026-01-01
 
-- [ ] **[a11y]** Complete accessibility labels for all screens
+- [x] **[a11y]** Complete accessibility labels for all screens
+  - Completed: 2026-01-29
   - Files: All screens in `mobile/screens/`
   - Context: Add accessibilityLabel, accessibilityHint, accessibilityRole throughout
   - Impact: Screen reader users can use app fully

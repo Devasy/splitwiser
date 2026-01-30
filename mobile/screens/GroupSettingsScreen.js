@@ -280,6 +280,8 @@ const GroupSettingsScreen = ({ route, navigation }) => {
             <IconButton
               icon="account-remove"
               onPress={() => onKick(m.userId, displayName)}
+              accessibilityLabel={`Remove ${displayName} from group`}
+              accessibilityRole="button"
             />
           ) : null
         }
@@ -307,6 +309,7 @@ const GroupSettingsScreen = ({ route, navigation }) => {
               onChangeText={setName}
               editable={!!isAdmin}
               style={{ marginBottom: 12 }}
+              accessibilityLabel="Group Name"
             />
             <Text style={{ marginBottom: 8 }}>Icon</Text>
             <View style={styles.iconRow}>
@@ -317,6 +320,8 @@ const GroupSettingsScreen = ({ route, navigation }) => {
                   style={styles.iconBtn}
                   onPress={() => setIcon(i)}
                   disabled={!isAdmin}
+                  accessibilityLabel={`Select icon ${i}`}
+                  accessibilityRole="button"
                 >
                   {i}
                 </Button>
@@ -329,6 +334,8 @@ const GroupSettingsScreen = ({ route, navigation }) => {
                 disabled={!isAdmin}
                 icon="image"
                 style={{ marginRight: 12 }}
+                accessibilityLabel="Change group image"
+                accessibilityRole="button"
               >
                 {pickedImage ? "Change Image" : "Upload Image"}
               </Button>
@@ -354,6 +361,8 @@ const GroupSettingsScreen = ({ route, navigation }) => {
                 loading={saving}
                 disabled={saving}
                 onPress={onSave}
+                accessibilityLabel="Save Changes"
+                accessibilityRole="button"
               >
                 Save Changes
               </Button>
@@ -376,6 +385,8 @@ const GroupSettingsScreen = ({ route, navigation }) => {
               mode="outlined"
               onPress={onShareInvite}
               icon="share-variant"
+              accessibilityLabel="Share invite code"
+              accessibilityRole="button"
             >
               Share invite
             </Button>
@@ -392,6 +403,9 @@ const GroupSettingsScreen = ({ route, navigation }) => {
                 textColor="#d32f2f"
                 onPress={onLeave}
                 icon="logout-variant"
+                accessibilityLabel="Leave Group"
+                accessibilityRole="button"
+                accessibilityHint="You must settle balances before leaving"
               >
                 Leave Group
               </Button>
@@ -402,6 +416,9 @@ const GroupSettingsScreen = ({ route, navigation }) => {
                   onPress={onDeleteGroup}
                   icon="delete"
                   style={{ marginTop: 8 }}
+                  accessibilityLabel="Delete Group"
+                  accessibilityRole="button"
+                  accessibilityHint="Permanently deletes the group and all data"
                 >
                   Delete Group
                 </Button>

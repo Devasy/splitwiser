@@ -100,6 +100,11 @@ const FriendsScreen = () => {
         descriptionStyle={{
           color: item.netBalance !== 0 ? balanceColor : "gray",
         }}
+        accessibilityRole="button"
+        accessibilityLabel={`Friend ${item.name}. ${
+          item.netBalance !== 0 ? balanceText : "Settled up"
+        }`}
+        accessibilityHint="Double tap to see balance breakdown"
         left={(props) =>
           imageUri ? (
             <Avatar.Image {...props} size={40} source={{ uri: imageUri }} />
@@ -207,7 +212,11 @@ const FriendsScreen = () => {
         <Appbar.Header>
           <Appbar.Content title="Friends" />
         </Appbar.Header>
-        <View style={styles.skeletonContainer}>
+        <View
+          style={styles.skeletonContainer}
+          accessibilityLabel="Loading friends list"
+          accessibilityRole="progressbar"
+        >
           {Array.from({ length: 5 }).map((_, i) => (
             <SkeletonRow key={i} />
           ))}
@@ -234,6 +243,8 @@ const FriendsScreen = () => {
               size={16}
               onPress={() => setShowTooltip(false)}
               style={styles.closeButton}
+              accessibilityLabel="Close tooltip"
+              accessibilityRole="button"
             />
           </View>
         </View>
