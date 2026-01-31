@@ -258,7 +258,12 @@ const styles = StyleSheet.create({
   expensesTitle: {
     marginTop: 16,
     marginBottom: 8,
-    fontSize: 20,    fontWeight: "bold",
+    expensesTitle: {
+      marginTop: 16,
+      marginBottom: 8,
+      fontSize: 20,
+      fontWeight: "bold",
+    },
   },
   memberText: {
     fontSize: 16,
