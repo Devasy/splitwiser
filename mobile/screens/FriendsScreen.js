@@ -25,8 +25,8 @@ const FriendsScreen = () => {
   const isFocused = useIsFocused();
 
   const fetchData = async (showLoading = true) => {
-    if (showLoading) setIsLoading(true);
     try {
+      if (showLoading) setIsLoading(true);
       // Fetch friends balance + groups concurrently for group icons
       const friendsResponse = await getFriendsBalance();
       const friendsData = friendsResponse.data.friendsBalance || [];
