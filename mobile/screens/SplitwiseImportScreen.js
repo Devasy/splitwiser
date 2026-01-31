@@ -66,6 +66,9 @@ const SplitwiseImportScreen = ({ navigation }) => {
               style={styles.button}
               icon={loading ? undefined : "login"}
               loading={loading}
+              accessibilityLabel="Connect with Splitwise"
+              accessibilityRole="button"
+              accessibilityHint="Opens Splitwise in your browser to authorize access"
             >
               {loading ? "Connecting..." : "Connect with Splitwise"}
             </Button>

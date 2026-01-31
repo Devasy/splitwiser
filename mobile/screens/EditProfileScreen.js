@@ -103,6 +103,9 @@ const EditProfileScreen = ({ navigation }) => {
             onPress={pickImage}
             icon="camera"
             style={styles.imageButton}
+            accessibilityLabel="Change profile picture"
+            accessibilityRole="button"
+            accessibilityHint="Opens your media library to select a new photo"
           >
             {pickedImage ? "Change Photo" : "Add Photo"}
           </Button>
@@ -113,6 +116,7 @@ const EditProfileScreen = ({ navigation }) => {
           value={name}
           onChangeText={setName}
           style={styles.input}
+          accessibilityLabel="Full Name"
         />
         <Button
           mode="contained"
@@ -120,6 +124,8 @@ const EditProfileScreen = ({ navigation }) => {
           loading={isSubmitting}
           disabled={isSubmitting}
           style={styles.button}
+          accessibilityLabel="Save Changes"
+          accessibilityRole="button"
         >
           Save Changes
         </Button>

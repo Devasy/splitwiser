@@ -185,6 +185,9 @@ const HomeScreen = ({ navigation }) => {
             groupIcon,
           })
         }
+        accessibilityRole="button"
+        accessibilityLabel={`Group ${item.name}. ${getSettlementStatusText()}`}
+        accessibilityHint="Double tap to view group details"
       >
         <Card.Title
           title={item.name}
@@ -219,12 +222,15 @@ const HomeScreen = ({ navigation }) => {
             value={newGroupName}
             onChangeText={setNewGroupName}
             style={styles.input}
+            accessibilityLabel="New group name"
           />
           <Button
             mode="contained"
             onPress={handleCreateGroup}
             loading={isCreatingGroup}
             disabled={isCreatingGroup}
+            accessibilityLabel="Create Group"
+            accessibilityRole="button"
           >
             Create
           </Button>
@@ -233,12 +239,19 @@ const HomeScreen = ({ navigation }) => {
 
       <Appbar.Header>
         <Appbar.Content title="Your Groups" />
-        <Appbar.Action icon="plus" onPress={showModal} />
+        <Appbar.Action
+          icon="plus"
+          onPress={showModal}
+          accessibilityLabel="Create new group"
+          accessibilityRole="button"
+        />
         <Appbar.Action
           icon="account-plus"
           onPress={() =>
             navigation.navigate("JoinGroup", { onGroupJoined: fetchGroups })
           }
+          accessibilityLabel="Join a group"
+          accessibilityRole="button"
         />
       </Appbar.Header>
 

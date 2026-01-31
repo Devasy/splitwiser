@@ -7,6 +7,14 @@
 ## [Unreleased]
 
 ### Added
+- **Mobile Accessibility:** Completed accessibility audit for all mobile screens.
+  - **Features:**
+    - Added `accessibilityLabel` to all interactive elements (buttons, inputs, list items).
+    - Added `accessibilityRole` to ensure screen readers identify element types correctly.
+    - Added `accessibilityHint` for clearer context on destructive actions or complex interactions.
+    - Covered Auth, Dashboard, Groups, and Utility screens.
+  - **Technical:** Updated all files in `mobile/screens/` to compliant with React Native accessibility standards.
+
 - **Mobile Pull-to-Refresh:** Implemented native pull-to-refresh interactions with haptic feedback for key lists.
   - **Features:**
     - Integrated `RefreshControl` into `HomeScreen`, `FriendsScreen`, and `GroupDetailsScreen`.

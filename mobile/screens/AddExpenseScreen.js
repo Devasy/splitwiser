@@ -282,6 +282,11 @@ const AddExpenseScreen = ({ route, navigation }) => {
             label={member.user.name}
             status={selectedMembers[member.userId] ? "checked" : "unchecked"}
             onPress={() => handleMemberSelect(member.userId)}
+            accessibilityLabel={`Select ${member.user.name}`}
+            accessibilityRole="checkbox"
+            accessibilityState={{
+              checked: !!selectedMembers[member.userId],
+            }}
           />
         ));
       case "exact":
@@ -295,6 +300,7 @@ const AddExpenseScreen = ({ route, navigation }) => {
             }
             keyboardType="numeric"
             style={styles.splitInput}
+            accessibilityLabel={`${member.user.name}'s exact amount`}
           />
         ));
       case "percentage":
@@ -308,6 +314,7 @@ const AddExpenseScreen = ({ route, navigation }) => {
             }
             keyboardType="numeric"
             style={styles.splitInput}
+            accessibilityLabel={`${member.user.name}'s percentage`}
           />
         ));
       case "shares":
@@ -321,6 +328,7 @@ const AddExpenseScreen = ({ route, navigation }) => {
             }
             keyboardType="numeric"
             style={styles.splitInput}
+            accessibilityLabel={`${member.user.name}'s shares`}
           />
         ));
       default:
@@ -351,6 +359,7 @@ const AddExpenseScreen = ({ route, navigation }) => {
           value={description}
           onChangeText={setDescription}
           style={styles.input}
+          accessibilityLabel="Expense Description"
         />
         <TextInput
           label="Amount"
@@ -358,13 +367,19 @@ const AddExpenseScreen = ({ route, navigation }) => {
           onChangeText={setAmount}
           style={styles.input}
           keyboardType="numeric"
+          accessibilityLabel="Expense Amount"
         />
 
         <Menu
           visible={menuVisible}
           onDismiss={() => setMenuVisible(false)}
           anchor={
-            <Button onPress={() => setMenuVisible(true)}>
+            <Button
+              onPress={() => setMenuVisible(true)}
+              accessibilityLabel={`Paid by ${selectedPayerName}`}
+              accessibilityRole="button"
+              accessibilityHint="Double tap to change payer"
+            >
               Paid by: {selectedPayerName}
             </Button>
           }
@@ -442,6 +457,8 @@ const AddExpenseScreen = ({ route, navigation }) => {
           style={styles.button}
           loading={isSubmitting}
           disabled={isSubmitting}
+          accessibilityLabel="Add Expense"
+          accessibilityRole="button"
         >
           Add Expense
         </Button>
