@@ -335,7 +335,7 @@ const GroupSettingsScreen = ({ route, navigation }) => {
                 disabled={!isAdmin}
                 icon="image"
                 style={{ marginRight: 12 }}
-                accessibilityLabel={pickedImage ? "Change group image" : "Upload group image"}
+                accessibilityLabel="Change group image"
                 accessibilityRole="button"
               >
                 {pickedImage ? "Change Image" : "Upload Image"}
