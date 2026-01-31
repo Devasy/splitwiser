@@ -73,6 +73,7 @@ const AccountScreen = ({ navigation }) => {
             onPress={handleLogout}
             accessibilityLabel="Logout"
             accessibilityRole="button"
+            accessibilityHint="Logs you out of the application"
           />
         </List.Section>
       </View>

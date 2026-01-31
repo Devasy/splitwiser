@@ -282,6 +282,7 @@ const GroupSettingsScreen = ({ route, navigation }) => {
               onPress={() => onKick(m.userId, displayName)}
               accessibilityLabel={`Remove ${displayName} from group`}
               accessibilityRole="button"
+              accessibilityHint="Removes this member from the group"
             />
           ) : null
         }
