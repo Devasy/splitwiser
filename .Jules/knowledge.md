@@ -306,6 +306,17 @@ Commonly used components:
 
 Most screens use `<View style={{ flex: 1 }}>` - consider wrapping in `SafeAreaView` for notched devices.
 
+### Accessibility Patterns
+
+**Date:** 2026-01-29
+**Context:** Auditing and fixing mobile accessibility
+
+When building mobile screens with React Native Paper:
+1.  **Explicit Labels:** Always add `accessibilityLabel` to `IconButton`, `FAB`, and `Card` components that act as buttons.
+2.  **Roles:** Use `accessibilityRole="button"` for pressable elements, `accessibilityRole="header"` for titles.
+3.  **Hints:** Use `accessibilityHint` for non-obvious actions (e.g., "Double tap to delete").
+4.  **State:** For custom checkboxes or toggles, use `accessibilityState={{ checked: boolean }}`.
+
 ---
 
 ## API Response Patterns

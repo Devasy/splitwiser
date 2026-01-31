@@ -46,6 +46,7 @@ const JoinGroupScreen = ({ navigation, route }) => {
           onChangeText={setJoinCode}
           style={styles.input}
           autoCapitalize="characters"
+          accessibilityLabel="Group Join Code"
         />
         <Button
           mode="contained"
@@ -53,6 +54,8 @@ const JoinGroupScreen = ({ navigation, route }) => {
           loading={isJoining}
           disabled={isJoining}
           style={styles.button}
+          accessibilityLabel="Join Group"
+          accessibilityRole="button"
         >
           Join Group
         </Button>

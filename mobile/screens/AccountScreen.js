@@ -39,30 +39,41 @@ const AccountScreen = ({ navigation }) => {
             title="Edit Profile"
             left={() => <List.Icon icon="account-edit" />}
             onPress={() => navigation.navigate("EditProfile")}
+            accessibilityLabel="Edit Profile"
+            accessibilityRole="button"
           />
           <Divider />
           <List.Item
             title="Email Settings"
             left={() => <List.Icon icon="email-edit-outline" />}
             onPress={handleComingSoon}
+            accessibilityLabel="Email Settings"
+            accessibilityRole="button"
           />
           <Divider />
           <List.Item
             title="Send Feedback"
             left={() => <List.Icon icon="message-alert-outline" />}
             onPress={handleComingSoon}
+            accessibilityLabel="Send Feedback"
+            accessibilityRole="button"
           />
           <Divider />
           <List.Item
             title="Import from Splitwise"
             left={() => <List.Icon icon="import" />}
             onPress={() => navigation.navigate("SplitwiseImport")}
+            accessibilityLabel="Import from Splitwise"
+            accessibilityRole="button"
           />
           <Divider />
           <List.Item
             title="Logout"
             left={() => <List.Icon icon="logout" />}
             onPress={handleLogout}
+            accessibilityLabel="Logout"
+            accessibilityRole="button"
+            accessibilityHint="Logs you out of the application"
           />
         </List.Section>
       </View>

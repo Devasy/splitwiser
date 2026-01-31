@@ -75,6 +75,8 @@ const GroupDetailsScreen = ({ route, navigation }) => {
         <IconButton
           icon="cog"
           onPress={() => navigation.navigate("GroupSettings", { groupId })}
+          accessibilityLabel="Group settings"
+          accessibilityRole="button"
         />
       ),
     });
@@ -108,7 +110,13 @@ const GroupDetailsScreen = ({ route, navigation }) => {
     }
 
     return (
-      <Card style={styles.card}>
+      <Card
+        style={styles.card}
+        accessibilityRole="button"
+        accessibilityLabel={`Expense: ${item.description}, Amount: ${formatCurrency(
+          item.amount
+        )}. Paid by ${getMemberName(item.paidBy || item.createdBy)}. ${balanceText}`}
+      >
         <Card.Content>
           <Title>{item.description}</Title>
           <Paragraph>Amount: {formatCurrency(item.amount)}</Paragraph>
@@ -234,6 +242,8 @@ const GroupDetailsScreen = ({ route, navigation }) => {
         style={styles.fab}
         icon="plus"
         onPress={() => navigation.navigate("AddExpense", { groupId: groupId })}
+        accessibilityLabel="Add expense"
+        accessibilityRole="button"
       />
     </View>
   );

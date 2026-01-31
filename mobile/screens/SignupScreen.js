@@ -43,6 +43,7 @@ const SignupScreen = ({ navigation }) => {
         onChangeText={setName}
         style={styles.input}
         autoCapitalize="words"
+        accessibilityLabel="Full Name"
       />
       <TextInput
         label="Email"
@@ -51,6 +52,7 @@ const SignupScreen = ({ navigation }) => {
         style={styles.input}
         keyboardType="email-address"
         autoCapitalize="none"
+        accessibilityLabel="Email address"
       />
       <TextInput
         label="Password"
@@ -58,6 +60,7 @@ const SignupScreen = ({ navigation }) => {
         onChangeText={setPassword}
         style={styles.input}
         secureTextEntry
+        accessibilityLabel="Password"
       />
       <TextInput
         label="Confirm Password"
@@ -65,6 +68,7 @@ const SignupScreen = ({ navigation }) => {
         onChangeText={setConfirmPassword}
         style={styles.input}
         secureTextEntry
+        accessibilityLabel="Confirm Password"
       />
       <Button
         mode="contained"
@@ -72,10 +76,19 @@ const SignupScreen = ({ navigation }) => {
         style={styles.button}
         loading={isLoading}
         disabled={isLoading}
+        accessibilityLabel="Create account"
+        accessibilityRole="button"
       >
         Sign Up
       </Button>
-      <Button onPress={() => navigation.navigate('Login')} style={styles.button} disabled={isLoading}>
+      <Button
+        onPress={() => navigation.navigate("Login")}
+        style={styles.button}
+        disabled={isLoading}
+        accessibilityLabel="Go to login screen"
+        accessibilityRole="button"
+        accessibilityHint="Navigates to the login screen"
+      >
         Already have an account? Log In
       </Button>
     </View>
