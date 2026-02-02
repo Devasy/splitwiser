@@ -1,7 +1,6 @@
 import { useContext, useEffect, useState } from "react";
 import { Alert, FlatList, RefreshControl, StyleSheet, View } from "react-native";
 import {
-  ActivityIndicator,
   Appbar,
   Avatar,
   Button,
@@ -12,6 +11,7 @@ import {
   TextInput,
   useTheme,
 } from "react-native-paper";
+import SkeletonGroupCard from "../components/SkeletonGroupCard";
 import * as Haptics from "expo-haptics";
 import { createGroup, getGroups, getOptimizedSettlements } from "../api/groups";
 import { AuthContext } from "../context/AuthContext";
@@ -33,7 +33,7 @@ const HomeScreen = ({ navigation }) => {
   const showModal = () => setModalVisible(true);
   const hideModal = () => setModalVisible(false);
 
-  // Calculate settlement status for a group
+  // Calculate settlement status for a group (owes/owed)
   const calculateSettlementStatus = async (groupId, userId) => {
     try {
       const response = await getOptimizedSettlements(groupId);
@@ -256,8 +256,10 @@ const HomeScreen = ({ navigation }) => {
       </Appbar.Header>
 
       {isLoading ? (
-        <View style={styles.loaderContainer}>
-          <ActivityIndicator size="large" />
+        <View style={styles.list}>
+          {[1, 2, 3, 4].map((i) => (
+            <SkeletonGroupCard key={i} />
+          ))}
         </View>
       ) : (
         <FlatList
