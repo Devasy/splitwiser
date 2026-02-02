@@ -7,6 +7,14 @@
 ## [Unreleased]
 
 ### Added
+- **Mobile Skeleton Loading:** Implemented skeleton loading state for HomeScreen.
+  - **Features:**
+    - Created `SkeletonGroupCard` component mimicking the actual group card layout.
+    - Implemented pulsing opacity animation (`Animated.loop`) for visual feedback.
+    - Used `useTheme` to ensure placeholders match the active theme (Dark/Light).
+    - Replaced generic `ActivityIndicator` with a list of skeletons.
+  - **Technical:** Created `mobile/components/SkeletonGroupCard.js` and updated `mobile/screens/HomeScreen.js`.
+
 - **Mobile Accessibility:** Completed accessibility audit for all mobile screens.
   - **Features:**
     - Added `accessibilityLabel` to all interactive elements (buttons, inputs, list items).
