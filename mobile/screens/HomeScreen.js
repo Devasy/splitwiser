@@ -33,7 +33,7 @@ const HomeScreen = ({ navigation }) => {
   const showModal = () => setModalVisible(true);
   const hideModal = () => setModalVisible(false);
 
-  // Calculate settlement status for a group
+  // Calculate settlement status for a group (owes/owed)
   const calculateSettlementStatus = async (groupId, userId) => {
     try {
       const response = await getOptimizedSettlements(groupId);
