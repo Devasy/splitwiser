@@ -18,6 +18,9 @@ export const getGroupMembers = (groupId) =>
 export const getGroupExpenses = (groupId) =>
   apiClient.get(`/groups/${groupId}/expenses`);
 
+export const deleteExpense = (groupId, expenseId) =>
+  apiClient.delete(`/groups/${groupId}/expenses/${expenseId}`);
+
 export const createGroup = (name) => apiClient.post("/groups", { name });
 
 export const joinGroup = (joinCode) =>
