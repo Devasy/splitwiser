@@ -87,12 +87,12 @@
 
 ### Mobile
 
-- [ ] **[ux]** Swipe-to-delete for expenses with undo option
+- [x] **[ux]** Swipe-to-delete for expenses with undo option
+  - Completed: 2026-02-02
   - File: `mobile/screens/GroupDetailsScreen.js`
-  - Context: Add swipeable rows with delete action
+  - Context: Add swipeable rows with delete action and Snackbar undo
   - Impact: Quick expense management
-  - Size: ~55 lines
-  - Added: 2026-01-01
+  - Size: ~100 lines
 
 - [ ] **[style]** Haptic feedback on all button presses
   - Files: All button interactions across mobile

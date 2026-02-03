@@ -1,5 +1,5 @@
-import { useContext, useEffect, useState } from "react";
-import { Alert, FlatList, RefreshControl, StyleSheet, Text, View } from "react-native";
+import { useContext, useEffect, useState, useRef } from "react";
+import { Alert, FlatList, RefreshControl, StyleSheet, Text, View, Animated, TouchableOpacity } from "react-native";
 import {
   ActivityIndicator,
   Card,
@@ -8,12 +8,15 @@ import {
   Paragraph,
   Title,
   useTheme,
+  Snackbar,
 } from "react-native-paper";
 import * as Haptics from "expo-haptics";
+import { Swipeable } from "react-native-gesture-handler";
 import {
   getGroupExpenses,
   getGroupMembers,
   getOptimizedSettlements,
+  deleteExpense,
 } from "../api/groups";
 import { AuthContext } from "../context/AuthContext";
 
@@ -26,6 +29,11 @@ const GroupDetailsScreen = ({ route, navigation }) => {
   const [settlements, setSettlements] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Undo functionality state
+  const [snackbarVisible, setSnackbarVisible] = useState(false);
+  const [deletedExpense, setDeletedExpense] = useState(null);
+  const undoTimeoutRef = useRef(null);
 
   // Currency configuration - can be made configurable later
   const currency = "₹"; // Default to INR, can be changed to '$' for USD
@@ -76,11 +84,96 @@ const GroupDetailsScreen = ({ route, navigation }) => {
     if (token && groupId) {
       fetchData();
     }
+
+    return () => {
+      // Cleanup timeout on unmount
+      if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current);
+    };
   }, [token, groupId]);
+
+  const handleDelete = (expenseId) => {
+    const expenseToDelete = expenses.find((e) => e._id === expenseId);
+    if (!expenseToDelete) return;
+
+    // Trigger Haptic Feedback
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+    // Optimistic update: Remove from list immediately
+    setExpenses((prev) => prev.filter((e) => e._id !== expenseId));
+    setDeletedExpense(expenseToDelete);
+    setSnackbarVisible(true);
+
+    // Clear any existing timeout (if user deletes rapidly)
+    if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current);
+
+    // Set timeout for actual deletion
+    const timeout = setTimeout(async () => {
+      try {
+        await deleteExpense(groupId, expenseId);
+        // We don't need to do anything else on success as item is already gone from UI
+      } catch (error) {
+        console.error("Failed to delete expense:", error);
+        Alert.alert("Error", "Failed to delete expense.");
+        // Restore if failed
+        setExpenses((prev) => [...prev, expenseToDelete]);
+      }
+    }, 3500); // 3.5 seconds delay (giving user time to hit Undo)
+
+    undoTimeoutRef.current = timeout;
+  };
+
+  const handleUndo = () => {
+    if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current);
+    if (deletedExpense) {
+      setExpenses((prev) => {
+        const newExpenses = [...prev, deletedExpense];
+        // Sort if possible, otherwise just append.
+        // Assuming expenses have 'date' or '_id' (creation timeish)
+        return newExpenses.sort((a, b) => {
+          const dateA = new Date(a.date || 0);
+          const dateB = new Date(b.date || 0);
+          return dateB - dateA; // Descending
+        });
+      });
+      setDeletedExpense(null);
+    }
+    setSnackbarVisible(false);
+  };
 
   const getMemberName = (userId) => {
     const member = members.find((m) => m.userId === userId);
     return member ? member.user.name : "Unknown";
+  };
+
+  const renderRightActions = (progress, dragX, item) => {
+    const trans = dragX.interpolate({
+      inputRange: [-100, 0],
+      outputRange: [1, 0],
+      extrapolate: 'clamp',
+    });
+
+    return (
+      <View style={styles.deleteActionContainer}>
+        <Animated.View
+          style={[
+            styles.deleteAction,
+            {
+              transform: [{ translateX: 0 }], // Basic implementation
+            },
+          ]}
+        >
+          <TouchableOpacity
+            onPress={() => handleDelete(item._id)}
+            style={styles.deleteButton}
+            accessibilityLabel="Delete expense"
+            accessibilityRole="button"
+          >
+            <IconButton icon="delete" iconColor="white" size={24} />
+            <Text style={styles.deleteText}>Delete</Text>
+          </TouchableOpacity>
+        </Animated.View>
+      </View>
+    );
   };
 
   const renderExpense = ({ item }) => {
@@ -103,22 +196,26 @@ const GroupDetailsScreen = ({ route, navigation }) => {
     }
 
     return (
-      <Card
-        style={styles.card}
-        accessibilityRole="button"
-        accessibilityLabel={`Expense: ${item.description}, Amount: ${formatCurrency(
-          item.amount
-        )}. Paid by ${getMemberName(item.paidBy || item.createdBy)}. ${balanceText}`}
+      <Swipeable
+        renderRightActions={(progress, dragX) => renderRightActions(progress, dragX, item)}
       >
-        <Card.Content>
-          <Title>{item.description}</Title>
-          <Paragraph>Amount: {formatCurrency(item.amount)}</Paragraph>
-          <Paragraph>
-            Paid by: {getMemberName(item.paidBy || item.createdBy)}
-          </Paragraph>
-          <Paragraph style={{ color: balanceColor }}>{balanceText}</Paragraph>
-        </Card.Content>
-      </Card>
+        <Card
+          style={styles.card}
+          accessibilityRole="button"
+          accessibilityLabel={`Expense: ${item.description}, Amount: ${formatCurrency(
+            item.amount
+          )}. Paid by ${getMemberName(item.paidBy || item.createdBy)}. ${balanceText}`}
+        >
+          <Card.Content>
+            <Title>{item.description}</Title>
+            <Paragraph>Amount: {formatCurrency(item.amount)}</Paragraph>
+            <Paragraph>
+              Paid by: {getMemberName(item.paidBy || item.createdBy)}
+            </Paragraph>
+            <Paragraph style={{ color: balanceColor }}>{balanceText}</Paragraph>
+          </Card.Content>
+        </Card>
+      </Swipeable>
     );
   };
 
@@ -238,6 +335,22 @@ const GroupDetailsScreen = ({ route, navigation }) => {
         accessibilityLabel="Add expense"
         accessibilityRole="button"
       />
+
+      <Snackbar
+        visible={snackbarVisible}
+        onDismiss={() => {
+            // If dismissed by timeout, we don't do anything special as the delete timeout is already running.
+            // If dismissed by user action (swiping away), we also let the timeout run.
+            setSnackbarVisible(false);
+        }}
+        action={{
+          label: 'Undo',
+          onPress: handleUndo,
+        }}
+        duration={3000}
+      >
+        Expense deleted
+      </Snackbar>
     </View>
   );
 };
@@ -257,6 +370,7 @@ const styles = StyleSheet.create({
   },
   card: {
     marginBottom: 16,
+    backgroundColor: 'white', // Ensure opacity doesn't show background
   },
   expensesTitle: {
     marginTop: 16,
@@ -272,6 +386,32 @@ const styles = StyleSheet.create({
     margin: 16,
     right: 0,
     bottom: 0,
+  },
+  // Swipe Actions
+  deleteActionContainer: {
+      marginBottom: 16,
+      justifyContent: 'center',
+      alignItems: 'flex-end',
+      flex: 1,
+  },
+  deleteAction: {
+      backgroundColor: '#dd2c00',
+      width: 100,
+      height: '100%',
+      justifyContent: 'center',
+      alignItems: 'center',
+      borderRadius: 8,
+  },
+  deleteButton: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      width: '100%',
+  },
+  deleteText: {
+      color: 'white',
+      fontWeight: 'bold',
+      marginTop: -10,
   },
   // Settlement Summary Styles
   settlementContainer: {

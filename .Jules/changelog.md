@@ -7,6 +7,14 @@
 ## [Unreleased]
 
 ### Added
+- **Mobile Swipe-to-Delete:** Implemented intuitive swipe gestures to delete expenses with an undo safety net.
+  - **Features:**
+    - Swipe-to-delete interaction on expense items.
+    - "Undo" functionality via Snackbar notification.
+    - Haptic feedback on swipe actions.
+    - Optimistic UI updates for instant feedback.
+  - **Technical:** Integrated `react-native-gesture-handler` and `react-native-reanimated`. Updated `mobile/screens/GroupDetailsScreen.js` and `mobile/api/groups.js`.
+
 - **Mobile Accessibility:** Completed accessibility audit for all mobile screens.
   - **Features:**
     - Added `accessibilityLabel` to all interactive elements (buttons, inputs, list items).
