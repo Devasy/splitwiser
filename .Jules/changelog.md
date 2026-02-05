@@ -7,6 +7,14 @@
 ## [Unreleased]
 
 ### Added
+- **Mobile Skeleton Loading:** Implemented skeleton loading state for HomeScreen.
+  - **Features:**
+    - Created `SkeletonGroupCard` component with pulsing animation.
+    - Replaced `ActivityIndicator` on `HomeScreen` with 5 skeleton cards.
+    - Matched layout of real group cards.
+    - Added accessibility attributes (`accessibilityRole="progressbar"`).
+  - **Technical:** Used `Animated` API for performant opacity animation. Verified via Expo Web export.
+
 - **Mobile Accessibility:** Completed accessibility audit for all mobile screens.
   - **Features:**
     - Added `accessibilityLabel` to all interactive elements (buttons, inputs, list items).
