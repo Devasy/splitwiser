@@ -13,6 +13,7 @@ import {
   useTheme,
 } from "react-native-paper";
 import * as Haptics from "expo-haptics";
+import SkeletonGroupCard from "../components/SkeletonGroupCard";
 import { createGroup, getGroups, getOptimizedSettlements } from "../api/groups";
 import { AuthContext } from "../context/AuthContext";
 import { formatCurrency, getCurrencySymbol } from "../utils/currency";
@@ -256,8 +257,10 @@ const HomeScreen = ({ navigation }) => {
       </Appbar.Header>
 
       {isLoading ? (
-        <View style={styles.loaderContainer}>
-          <ActivityIndicator size="large" />
+        <View style={styles.skeletonContainer}>
+          {[1, 2, 3, 4, 5].map((i) => (
+            <SkeletonGroupCard key={i} />
+          ))}
         </View>
       ) : (
         <FlatList
@@ -292,6 +295,9 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+  },
+  skeletonContainer: {
+    padding: 16,
   },
   list: {
     padding: 16,

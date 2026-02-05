@@ -366,6 +366,18 @@ When writing Playwright scripts to verify frontend changes without backend:
 2. **Route Matching:** Use specific route patterns (e.g., `**/users/me`) and ensure they don't accidentally swallow longer paths (like `**/users/me/balance-summary`) if using wildcards carelessly. Register specific paths before general ones if using `page.route` order dependence, or use specific globs.
 3. **Response Structure:** Mocks must match the structure expected by `axios` interceptors and components. If `axios` returns `res.data` as the body, and the component expects `res.data.groups`, the mock body should be `{"groups": [...]}` (not `{"data": {"groups": ...}}`).
 
+### Mobile Verification without Emulator
+**Date:** 2026-02-14
+**Context:** verifying React Native changes when no emulator is available.
+
+1.  **Expo Web Export:** Use `npx expo start --web` to run the mobile app in a web browser.
+2.  **Playwright Testing:** Use Playwright to navigate to the web version (e.g., `http://localhost:8081`).
+3.  **Limitations:**
+    - `AsyncStorage` might behave differently (uses `localStorage` or `IndexedDB`).
+    - Native modules (like Haptics) are mocked or no-ops.
+    - Auth persistence might be tricky to mock if `AsyncStorage` implementation varies.
+4.  **Strategy:** For visual verification of components (like skeletons), you can temporarily hardcode state (e.g., in `AuthContext`) to bypass login/loading logic, take a screenshot, and then revert the hardcoding.
+
 ---
 
 ## Known Issues & Gotchas
