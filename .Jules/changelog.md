@@ -7,6 +7,13 @@
 ## [Unreleased]
 
 ### Added
+- **Web Success Celebration:** Implemented a delightful confetti animation when users settle up.
+  - **Features:**
+    - Fires fireworks animation when a payment is recorded.
+    - Shows a "Celebrate!" button with confetti burst in the "All Settled Up" empty state.
+    - Uses `canvas-confetti` library for lightweight, high-performance particles.
+  - **Technical:** Created `web/hooks/useConfetti.ts` hook. Integrated into `web/pages/GroupDetails.tsx`.
+
 - **Mobile Accessibility:** Completed accessibility audit for all mobile screens.
   - **Features:**
     - Added `accessibilityLabel` to all interactive elements (buttons, inputs, list items).
