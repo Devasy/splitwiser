@@ -163,7 +163,7 @@ const FriendsScreen = () => {
             />
           );
         })}
-      </List.Accordion>
+      </HapticListAccordion>
     );
   };
 
