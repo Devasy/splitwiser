@@ -17,13 +17,13 @@ import {
 import {
   ActivityIndicator,
   Avatar,
-  Button,
   Card,
-  IconButton,
-  List,
   Text,
   TextInput,
 } from "react-native-paper";
+import HapticButton from '../components/ui/HapticButton';
+import HapticIconButton from '../components/ui/HapticIconButton';
+import { HapticListItem } from '../components/ui/HapticList';
 import {
   deleteGroup as apiDeleteGroup,
   leaveGroup as apiLeaveGroup,
@@ -264,7 +264,7 @@ const GroupSettingsScreen = ({ route, navigation }) => {
     const displayName = m.user?.name || "Unknown";
     const imageUrl = m.user?.imageUrl;
     return (
-      <List.Item
+      <HapticListItem
         key={m.userId}
         title={displayName}
         description={m.role === "admin" ? "Admin" : undefined}
@@ -277,7 +277,7 @@ const GroupSettingsScreen = ({ route, navigation }) => {
         }
         right={() =>
           isAdmin && !isSelf ? (
-            <IconButton
+            <HapticIconButton
               icon="account-remove"
               onPress={() => onKick(m.userId, displayName)}
               accessibilityLabel={`Remove ${displayName} from group`}
@@ -315,7 +315,7 @@ const GroupSettingsScreen = ({ route, navigation }) => {
             <Text style={{ marginBottom: 8 }}>Icon</Text>
             <View style={styles.iconRow}>
               {ICON_CHOICES.map((i) => (
-                <Button
+                <HapticButton
                   key={i}
                   mode={icon === i ? "contained" : "outlined"}
                   style={styles.iconBtn}
@@ -325,11 +325,11 @@ const GroupSettingsScreen = ({ route, navigation }) => {
                   accessibilityRole="button"
                 >
                   {i}
-                </Button>
+                </HapticButton>
               ))}
             </View>
             <View style={{ flexDirection: "row", alignItems: "center" }}>
-              <Button
+              <HapticButton
                 mode="outlined"
                 onPress={pickImage}
                 disabled={!isAdmin}
@@ -339,7 +339,7 @@ const GroupSettingsScreen = ({ route, navigation }) => {
                 accessibilityRole="button"
               >
                 {pickedImage ? "Change Image" : "Upload Image"}
-              </Button>
+              </HapticButton>
               {pickedImage?.uri ? (
                 <Image
                   source={{ uri: pickedImage.uri }}
@@ -356,7 +356,7 @@ const GroupSettingsScreen = ({ route, navigation }) => {
               ) : null}
             </View>
             {isAdmin && (
-              <Button
+              <HapticButton
                 mode="contained"
                 style={{ marginTop: 12 }}
                 loading={saving}
@@ -366,7 +366,7 @@ const GroupSettingsScreen = ({ route, navigation }) => {
                 accessibilityRole="button"
               >
                 Save Changes
-              </Button>
+              </HapticButton>
             )}
           </Card.Content>
         </Card>
@@ -382,7 +382,7 @@ const GroupSettingsScreen = ({ route, navigation }) => {
             <Text style={{ marginBottom: 8 }}>
               Join Code: {group?.joinCode}
             </Text>
-            <Button
+            <HapticButton
               mode="outlined"
               onPress={onShareInvite}
               icon="share-variant"
@@ -390,7 +390,7 @@ const GroupSettingsScreen = ({ route, navigation }) => {
               accessibilityRole="button"
             >
               Share invite
-            </Button>
+            </HapticButton>
           </Card.Content>
         </Card>
 
@@ -398,7 +398,7 @@ const GroupSettingsScreen = ({ route, navigation }) => {
           <Card.Title title="Danger Zone" />
           <Card.Content>
             <View>
-              <Button
+              <HapticButton
                 mode="outlined"
                 buttonColor="#fff"
                 textColor="#d32f2f"
@@ -409,9 +409,9 @@ const GroupSettingsScreen = ({ route, navigation }) => {
                 accessibilityHint="You must settle balances before leaving"
               >
                 Leave Group
-              </Button>
+              </HapticButton>
               {isAdmin && (
-                <Button
+                <HapticButton
                   mode="contained"
                   buttonColor="#d32f2f"
                   onPress={onDeleteGroup}
@@ -422,7 +422,7 @@ const GroupSettingsScreen = ({ route, navigation }) => {
                   accessibilityHint="Permanently deletes the group and all data"
                 >
                   Delete Group
-                </Button>
+                </HapticButton>
               )}
             </View>
           </Card.Content>

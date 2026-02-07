@@ -5,11 +5,12 @@ import {
   Appbar,
   Avatar,
   Divider,
-  IconButton,
   List,
   Text,
   useTheme,
 } from "react-native-paper";
+import HapticIconButton from '../components/ui/HapticIconButton';
+import { HapticListAccordion } from '../components/ui/HapticList';
 import * as Haptics from "expo-haptics";
 import { getFriendsBalance, getGroups } from "../api/groups";
 import { AuthContext } from "../context/AuthContext";
@@ -94,7 +95,7 @@ const FriendsScreen = () => {
     }
 
     return (
-      <List.Accordion
+      <HapticListAccordion
         title={item.name}
         description={item.netBalance !== 0 ? balanceText : "Settled up"}
         descriptionStyle={{
@@ -238,7 +239,7 @@ const FriendsScreen = () => {
               all shared groups. Check individual group details for optimized
               settlement suggestions.
             </Text>
-            <IconButton
+            <HapticIconButton
               icon="close"
               size={16}
               onPress={() => setShowTooltip(false)}

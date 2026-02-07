@@ -1,6 +1,7 @@
 import React, { useState, useContext } from 'react';
 import { View, StyleSheet, Alert } from 'react-native';
-import { Button, Text, TextInput } from 'react-native-paper';
+import { Text, TextInput } from 'react-native-paper';
+import HapticButton from '../components/ui/HapticButton';
 import { AuthContext } from '../context/AuthContext';
 
 const SignupScreen = ({ navigation }) => {
@@ -70,7 +71,7 @@ const SignupScreen = ({ navigation }) => {
         secureTextEntry
         accessibilityLabel="Confirm Password"
       />
-      <Button
+      <HapticButton
         mode="contained"
         onPress={handleSignup}
         style={styles.button}
@@ -80,8 +81,8 @@ const SignupScreen = ({ navigation }) => {
         accessibilityRole="button"
       >
         Sign Up
-      </Button>
-      <Button
+      </HapticButton>
+      <HapticButton
         onPress={() => navigation.navigate("Login")}
         style={styles.button}
         disabled={isLoading}
@@ -90,7 +91,7 @@ const SignupScreen = ({ navigation }) => {
         accessibilityHint="Navigates to the login screen"
       >
         Already have an account? Log In
-      </Button>
+      </HapticButton>
     </View>
   );
 };
