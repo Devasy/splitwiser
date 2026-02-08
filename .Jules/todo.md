@@ -107,8 +107,9 @@
 
 ### Web
 
-- [ ] **[ux]** Animated success celebration when settled up
-  - File: `web/pages/GroupDetails.tsx`
+- [x] **[ux]** Animated success celebration when settled up
+  - Completed: 2026-02-04
+  - Files: `web/hooks/useConfetti.ts`, `web/pages/GroupDetails.tsx`
   - Context: Show confetti or checkmark animation when no debts
   - Impact: Delightful moment, positive reinforcement
   - Size: ~45 lines
@@ -163,3 +164,7 @@
   - Completed: 2026-01-21
   - Files modified: `mobile/screens/HomeScreen.js`, `mobile/screens/GroupDetailsScreen.js`, `mobile/screens/FriendsScreen.js`
   - Impact: Native feel, users can easily refresh data
+- [x] **[ux]** Animated success celebration when settled up
+  - Completed: 2026-02-04
+  - Files modified: `web/hooks/useConfetti.ts`, `web/pages/GroupDetails.tsx`
+  - Impact: Delightful moment when users settle up debts

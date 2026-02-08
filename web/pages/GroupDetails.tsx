@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowRight, Banknote, Check, Copy, DollarSign, Hash, Layers, LogOut, PieChart, Plus, Receipt, Search, Settings, Share2, Trash2, UserMinus } from 'lucide-react';
+import { ArrowRight, Banknote, Check, Copy, DollarSign, Hash, Layers, LogOut, PartyPopper, PieChart, Plus, Receipt, Search, Settings, Share2, Trash2, UserMinus } from 'lucide-react';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { AnalyticsContent } from '../components/AnalyticsContent';
@@ -12,6 +12,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useConfirm } from '../contexts/ConfirmContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useToast } from '../contexts/ToastContext';
+import { useConfetti } from '../hooks/useConfetti';
 import {
     createExpense,
     createSettlement,
@@ -46,6 +47,7 @@ export const GroupDetails = () => {
     const { confirm } = useConfirm();
     const { style } = useTheme();
     const { addToast } = useToast();
+    const { fireConfetti, fireFireworks } = useConfetti();
 
     const [group, setGroup] = useState<Group | null>(null);
     const [expenses, setExpenses] = useState<Expense[]>([]);
@@ -451,6 +453,7 @@ export const GroupDetails = () => {
             setPaymentAmount('');
             fetchData();
             addToast('Payment recorded successfully!', 'success');
+            fireFireworks();
         } catch (err) {
             addToast("Failed to record payment", 'error');
         }
@@ -852,7 +855,10 @@ export const GroupDetails = () => {
                                     <Check size={48} className={style === THEMES.NEOBRUTALISM ? 'text-black' : 'text-emerald-500'} />
                                 </div>
                                 <h3 className={`text-2xl font-black ${style === THEMES.NEOBRUTALISM ? 'text-black' : 'text-emerald-500'}`}>All Settled Up!</h3>
-                                <p className="opacity-60">No outstanding balances in this group.</p>
+                                <p className="opacity-60 mb-6">No outstanding balances in this group.</p>
+                                <Button size="sm" variant="secondary" onClick={fireConfetti} className={style === THEMES.NEOBRUTALISM ? 'shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]' : ''}>
+                                    <PartyPopper size={16} /> Celebrate!
+                                </Button>
                             </div>
                         )}
                     </motion.div>
