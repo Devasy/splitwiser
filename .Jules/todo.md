@@ -163,3 +163,7 @@
   - Completed: 2026-01-21
   - Files modified: `mobile/screens/HomeScreen.js`, `mobile/screens/GroupDetailsScreen.js`, `mobile/screens/FriendsScreen.js`
   - Impact: Native feel, users can easily refresh data
+- [x] **[polish]** Password strength meter for signup
+  - Completed: 2026-02-08
+  - Files modified: `web/components/ui/PasswordStrength.tsx`, `web/pages/Auth.tsx`
+  - Impact: Provides visual feedback on password complexity during signup

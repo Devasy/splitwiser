@@ -7,6 +7,15 @@
 ## [Unreleased]
 
 ### Added
+- **Password Strength Meter:** Added a visual password strength indicator to the signup form.
+  - **Features:**
+    - Real-time strength calculation (Length, Uppercase, Lowercase, Number, Symbol).
+    - Visual feedback with segmented progress bar and color coding.
+    - Specific criteria checklist (8+ chars, Mixed case, Number, Symbol).
+    - Dual-theme support (Neobrutalism & Glassmorphism).
+    - Accessible ARIA live region for screen readers.
+  - **Technical:** Created `web/components/ui/PasswordStrength.tsx`. Integrated into `web/pages/Auth.tsx`.
+
 - **Mobile Accessibility:** Completed accessibility audit for all mobile screens.
   - **Features:**
     - Added `accessibilityLabel` to all interactive elements (buttons, inputs, list items).
