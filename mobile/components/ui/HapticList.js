@@ -1,24 +1,7 @@
-import React from 'react';
 import { List } from 'react-native-paper';
-import * as Haptics from 'expo-haptics';
+import { withHapticFeedback } from './hapticUtils';
 
-const HapticListItem = ({ onPress, ...props }) => {
-  const handlePress = (e) => {
-    if (onPress) {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      onPress(e);
-    }
-  };
-  return <List.Item onPress={onPress ? handlePress : undefined} {...props} />;
-};
-
-const HapticListAccordion = ({ onPress, ...props }) => {
-  const handlePress = (e) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    if (onPress) onPress(e);
-  };
-
-  return <List.Accordion onPress={handlePress} {...props} />;
-};
+const HapticListItem = withHapticFeedback(List.Item, { onlyWhenHandler: true });
+const HapticListAccordion = withHapticFeedback(List.Accordion, { onlyWhenHandler: true });
 
 export { HapticListItem, HapticListAccordion };

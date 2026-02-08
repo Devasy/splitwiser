@@ -1,14 +1,6 @@
-import React from 'react';
 import { IconButton } from 'react-native-paper';
-import * as Haptics from 'expo-haptics';
+import { withHapticFeedback } from './hapticUtils';
 
-const HapticIconButton = ({ onPress, ...props }) => {
-  const handlePress = (e) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    if (onPress) onPress(e);
-  };
-
-  return <IconButton onPress={handlePress} {...props} />;
-};
+const HapticIconButton = withHapticFeedback(IconButton);
 
 export default HapticIconButton;

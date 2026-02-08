@@ -11,7 +11,7 @@ import {
 } from "react-native-paper";
 import HapticIconButton from '../components/ui/HapticIconButton';
 import { HapticListAccordion } from '../components/ui/HapticList';
-import * as Haptics from "expo-haptics";
+import { triggerPullRefreshHaptic } from '../components/ui/hapticUtils';
 import { getFriendsBalance, getGroups } from "../api/groups";
 import { AuthContext } from "../context/AuthContext";
 import { formatCurrency } from "../utils/currency";
@@ -61,7 +61,7 @@ const FriendsScreen = () => {
 
   const onRefresh = async () => {
     setIsRefreshing(true);
-    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    await triggerPullRefreshHaptic();
     await fetchData(false);
     setIsRefreshing(false);
   };

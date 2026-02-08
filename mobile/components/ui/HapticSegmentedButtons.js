@@ -1,13 +1,8 @@
-import React from 'react';
 import { SegmentedButtons } from 'react-native-paper';
-import * as Haptics from 'expo-haptics';
+import { withHapticFeedback } from './hapticUtils';
 
-const HapticSegmentedButtons = ({ onValueChange, ...props }) => {
-  const handleChange = (value) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    if (onValueChange) onValueChange(value);
-  };
-  return <SegmentedButtons onValueChange={handleChange} {...props} />;
-};
+const HapticSegmentedButtons = withHapticFeedback(SegmentedButtons, {
+  pressProp: 'onValueChange',
+});
 
 export default HapticSegmentedButtons;

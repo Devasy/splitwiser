@@ -1,14 +1,8 @@
 import React from 'react';
 import { Menu } from 'react-native-paper';
-import * as Haptics from 'expo-haptics';
+import { withHapticFeedback } from './hapticUtils';
 
-const HapticMenuItem = ({ onPress, ...props }) => {
-  const handlePress = (e) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    if (onPress) onPress(e);
-  };
-  return <Menu.Item onPress={handlePress} {...props} />;
-};
+const HapticMenuItem = withHapticFeedback(Menu.Item);
 
 const HapticMenu = ({ children, ...props }) => {
   return <Menu {...props}>{children}</Menu>;
