@@ -1,7 +1,18 @@
 import confetti from 'canvas-confetti';
-import { useCallback } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 
 export const useConfetti = () => {
+    const fireworksIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+    // Cleanup interval on unmount
+    useEffect(() => {
+        return () => {
+            if (fireworksIntervalRef.current) {
+                clearInterval(fireworksIntervalRef.current);
+            }
+        };
+    }, []);
+
     const fireConfetti = useCallback(() => {
         confetti({
             particleCount: 100,
@@ -13,19 +24,27 @@ export const useConfetti = () => {
     }, []);
 
     const fireFireworks = useCallback(() => {
+        // Clear any existing interval
+        if (fireworksIntervalRef.current) {
+            clearInterval(fireworksIntervalRef.current);
+        }
+
         const duration = 5 * 1000;
         const animationEnd = Date.now() + duration;
-        const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
+        const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0, disableForReducedMotion: true };
 
         const randomInRange = (min: number, max: number) => {
             return Math.random() * (max - min) + min;
         };
 
-        const interval: any = setInterval(function () {
+        fireworksIntervalRef.current = setInterval(function () {
             const timeLeft = animationEnd - Date.now();
 
             if (timeLeft <= 0) {
-                return clearInterval(interval);
+                if (fireworksIntervalRef.current) {
+                    clearInterval(fireworksIntervalRef.current);
+                }
+                return;
             }
 
             const particleCount = 50 * (timeLeft / duration);
