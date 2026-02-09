@@ -7,6 +7,15 @@
 ## [Unreleased]
 
 ### Added
+- **Password Strength Meter:** Added a visual password strength indicator to the signup form.
+  - **Features:**
+    - Real-time strength calculation (Length, Uppercase, Lowercase, Number, Symbol).
+    - Visual feedback with segmented progress bar and color coding.
+    - Specific criteria checklist (6+ chars, Mixed case, Number, Symbol).
+    - Dual-theme support (Neobrutalism & Glassmorphism).
+    - Accessible ARIA live region for screen readers.
+  - **Technical:** Created `web/components/ui/PasswordStrength.tsx`. Integrated into `web/pages/Auth.tsx`.
+
 - **Mobile Haptics:** Implemented system-wide haptic feedback for all interactive elements.
   - **Features:**
     - Created `HapticButton`, `HapticIconButton`, `HapticFAB`, `HapticCard`, `HapticList`, `HapticCheckbox`, `HapticMenu`, `HapticSegmentedButtons`, `HapticAppbar` (including `HapticAppbarAction`, `HapticAppbarBackAction`) wrappers.

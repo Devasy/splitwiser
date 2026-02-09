@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
+import { PasswordStrength } from '../components/ui/PasswordStrength';
 import { Spinner } from '../components/ui/Spinner';
 import { THEMES } from '../constants';
 import { useAuth } from '../contexts/AuthContext';
@@ -298,6 +299,8 @@ export const Auth = () => {
                 error={fieldErrors.password}
                 className={isNeo ? 'rounded-none' : ''}
               />
+
+              {!isLogin && <PasswordStrength password={password} />}
 
               {error && (
                 <motion.div
