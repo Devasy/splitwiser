@@ -1,11 +1,18 @@
 import { useContext } from "react";
 import { Alert, StyleSheet, View } from "react-native";
-import { Appbar, Avatar, Divider, List, Text } from "react-native-paper";
+import { Appbar, Avatar, Divider, List, Switch, Text } from "react-native-paper";
 import { HapticListItem } from '../components/ui/HapticList';
 import { AuthContext } from "../context/AuthContext";
 
 const AccountScreen = ({ navigation }) => {
-  const { user, logout } = useContext(AuthContext);
+  const {
+    user,
+    logout,
+    isBiometricSupported,
+    isBiometricEnabled,
+    enableBiometrics,
+    disableBiometrics
+  } = useContext(AuthContext);
 
   const handleLogout = () => {
     logout();
@@ -13,6 +20,20 @@ const AccountScreen = ({ navigation }) => {
 
   const handleComingSoon = () => {
     Alert.alert("Coming Soon", "This feature is not yet implemented.");
+  };
+
+  const toggleBiometric = async (value) => {
+    if (value) {
+      const success = await enableBiometrics();
+      if (!success) {
+        Alert.alert("Error", "Failed to enable biometric authentication.");
+      }
+    } else {
+      const success = await disableBiometrics();
+      if (!success) {
+        Alert.alert("Error", "Failed to disable biometric authentication.");
+      }
+    }
   };
 
   return (
@@ -52,6 +73,28 @@ const AccountScreen = ({ navigation }) => {
             accessibilityRole="button"
           />
           <Divider />
+
+          {isBiometricSupported && (
+            <>
+              <HapticListItem
+                title="Biometric Login"
+                description="Use FaceID/TouchID to login"
+                left={() => <List.Icon icon="face-recognition" />}
+                right={() => (
+                  <Switch
+                    value={isBiometricEnabled}
+                    onValueChange={toggleBiometric}
+                  />
+                )}
+                onPress={() => toggleBiometric(!isBiometricEnabled)}
+                accessibilityLabel="Enable Biometric Login"
+                accessibilityRole="switch"
+                accessibilityState={{ checked: isBiometricEnabled }}
+              />
+              <Divider />
+            </>
+          )}
+
           <HapticListItem
             title="Send Feedback"
             left={() => <List.Icon icon="message-alert-outline" />}

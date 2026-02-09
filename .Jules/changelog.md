@@ -7,6 +7,15 @@
 ## [Unreleased]
 
 ### Added
+- **Mobile Biometric Authentication:** Implemented FaceID/TouchID login support.
+  - **Features:**
+    - "Enable Biometric Login" toggle in Account settings (visible only if hardware supports it).
+    - "Login with FaceID" button on Login screen.
+    - Secure credential storage using `expo-secure-store`.
+    - Automatic handling of user switching (disables biometrics if new user logs in).
+    - Syncs tokens to secure storage on refresh.
+  - **Technical:** Integrated `expo-local-authentication` and `expo-secure-store`. Updated `mobile/context/AuthContext.js` with secure storage logic. Added `NSFaceIDUsageDescription` to iOS config.
+
 - **Password Strength Meter:** Added a visual password strength indicator to the signup form.
   - **Features:**
     - Real-time strength calculation (Length, Uppercase, Lowercase, Number, Symbol).
