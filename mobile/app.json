@@ -16,7 +16,8 @@
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
-        "NSPhotoLibraryUsageDescription": "Allow Splitwiser to select a group icon from your photo library."
+        "NSPhotoLibraryUsageDescription": "Allow Splitwiser to select a group icon from your photo library.",
+        "NSFaceIDUsageDescription": "Allow Splitwiser to use FaceID for quick and secure login."
       }
     },
     "android": {

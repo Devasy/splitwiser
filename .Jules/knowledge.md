@@ -299,6 +299,16 @@ Commonly used components:
 - `<Portal>` and `<Modal>` for overlays
 - `<ActivityIndicator>` for loading states
 
+### Mobile Authentication & Biometrics
+
+**Date:** 2026-02-14
+**Context:** Implementing FaceID/TouchID login
+
+1.  **Dual Storage Strategy:** Use `AsyncStorage` for active session (cleared on logout) and `SecureStore` for persistent biometric credentials (kept on logout).
+2.  **User Switching:** When a new user logs in manually, check if their ID matches the one in `SecureStore`. If not, disable biometrics and clear secure storage to prevent account crossover.
+3.  **Token Sync:** Always update `SecureStore` when tokens refresh (in `useEffect`), otherwise biometric login will fail with expired tokens.
+4.  **iOS Config:** Must add `NSFaceIDUsageDescription` to `app.json` > `ios` > `infoPlist` to avoid crashes.
+
 ### Safe Area Pattern
 
 **Date:** 2026-01-01
