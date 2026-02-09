@@ -4,9 +4,10 @@ import { withHapticFeedback } from './hapticUtils';
 
 const HapticMenuItem = withHapticFeedback(Menu.Item);
 
-const HapticMenu = ({ children, ...props }) => {
-  return <Menu {...props}>{children}</Menu>;
-};
+const HapticMenu = React.forwardRef(({ children, ...props }, ref) => {
+  return <Menu ref={ref} {...props}>{children}</Menu>;
+});
+HapticMenu.displayName = 'HapticMenu';
 
 HapticMenu.Item = HapticMenuItem;
 
