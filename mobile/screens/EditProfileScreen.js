@@ -1,7 +1,9 @@
 import * as ImagePicker from "expo-image-picker";
 import { useContext, useState } from "react";
 import { Alert, StyleSheet, View } from "react-native";
-import { Appbar, Avatar, Button, TextInput, Title } from "react-native-paper";
+import { Appbar, Avatar, TextInput, Title } from "react-native-paper";
+import HapticButton from '../components/ui/HapticButton';
+import { HapticAppbarBackAction } from '../components/ui/HapticAppbar';
 import { updateUser } from "../api/auth";
 import { AuthContext } from "../context/AuthContext";
 
@@ -83,7 +85,7 @@ const EditProfileScreen = ({ navigation }) => {
   return (
     <View style={styles.container}>
       <Appbar.Header>
-        <Appbar.BackAction onPress={() => navigation.goBack()} />
+        <HapticAppbarBackAction onPress={() => navigation.goBack()} />
         <Appbar.Content title="Edit Profile" />
       </Appbar.Header>
       <View style={styles.content}>
@@ -98,7 +100,7 @@ const EditProfileScreen = ({ navigation }) => {
           ) : (
             <Avatar.Text size={100} label={(user?.name || "?").charAt(0)} />
           )}
-          <Button
+          <HapticButton
             mode="outlined"
             onPress={pickImage}
             icon="camera"
@@ -108,7 +110,7 @@ const EditProfileScreen = ({ navigation }) => {
             accessibilityHint="Opens your media library to select a new photo"
           >
             {pickedImage ? "Change Photo" : "Add Photo"}
-          </Button>
+          </HapticButton>
         </View>
 
         <TextInput
@@ -118,7 +120,7 @@ const EditProfileScreen = ({ navigation }) => {
           style={styles.input}
           accessibilityLabel="Full Name"
         />
-        <Button
+        <HapticButton
           mode="contained"
           onPress={handleUpdateProfile}
           loading={isSubmitting}
@@ -128,7 +130,7 @@ const EditProfileScreen = ({ navigation }) => {
           accessibilityRole="button"
         >
           Save Changes
-        </Button>
+        </HapticButton>
       </View>
     </View>
   );

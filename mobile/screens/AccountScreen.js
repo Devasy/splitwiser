@@ -1,6 +1,7 @@
 import { useContext } from "react";
 import { Alert, StyleSheet, View } from "react-native";
 import { Appbar, Avatar, Divider, List, Text } from "react-native-paper";
+import { HapticListItem } from '../components/ui/HapticList';
 import { AuthContext } from "../context/AuthContext";
 
 const AccountScreen = ({ navigation }) => {
@@ -35,7 +36,7 @@ const AccountScreen = ({ navigation }) => {
         </View>
 
         <List.Section>
-          <List.Item
+          <HapticListItem
             title="Edit Profile"
             left={() => <List.Icon icon="account-edit" />}
             onPress={() => navigation.navigate("EditProfile")}
@@ -43,7 +44,7 @@ const AccountScreen = ({ navigation }) => {
             accessibilityRole="button"
           />
           <Divider />
-          <List.Item
+          <HapticListItem
             title="Email Settings"
             left={() => <List.Icon icon="email-edit-outline" />}
             onPress={handleComingSoon}
@@ -51,7 +52,7 @@ const AccountScreen = ({ navigation }) => {
             accessibilityRole="button"
           />
           <Divider />
-          <List.Item
+          <HapticListItem
             title="Send Feedback"
             left={() => <List.Icon icon="message-alert-outline" />}
             onPress={handleComingSoon}
@@ -59,7 +60,7 @@ const AccountScreen = ({ navigation }) => {
             accessibilityRole="button"
           />
           <Divider />
-          <List.Item
+          <HapticListItem
             title="Import from Splitwise"
             left={() => <List.Icon icon="import" />}
             onPress={() => navigation.navigate("SplitwiseImport")}
@@ -67,7 +68,7 @@ const AccountScreen = ({ navigation }) => {
             accessibilityRole="button"
           />
           <Divider />
-          <List.Item
+          <HapticListItem
             title="Logout"
             left={() => <List.Icon icon="logout" />}
             onPress={handleLogout}

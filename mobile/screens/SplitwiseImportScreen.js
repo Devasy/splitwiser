@@ -2,12 +2,13 @@ import { useState } from "react";
 import { Alert, Linking, ScrollView, StyleSheet, View } from "react-native";
 import {
     Appbar,
-    Button,
     Card,
     IconButton,
     List,
     Text,
 } from "react-native-paper";
+import HapticButton from '../components/ui/HapticButton';
+import { HapticAppbarBackAction } from '../components/ui/HapticAppbar';
 import { getSplitwiseAuthUrl } from "../api/client";
 
 const SplitwiseImportScreen = ({ navigation }) => {
@@ -45,7 +46,7 @@ const SplitwiseImportScreen = ({ navigation }) => {
   return (
     <View style={styles.container}>
       <Appbar.Header>
-        <Appbar.BackAction onPress={() => navigation.goBack()} />
+        <HapticAppbarBackAction onPress={() => navigation.goBack()} />
         <Appbar.Content title="Import from Splitwise" />
       </Appbar.Header>
 
@@ -59,7 +60,7 @@ const SplitwiseImportScreen = ({ navigation }) => {
               Import all your friends, groups, and expenses with one click
             </Text>
 
-            <Button
+            <HapticButton
               mode="contained"
               onPress={handleOAuthImport}
               disabled={loading}
@@ -71,7 +72,7 @@ const SplitwiseImportScreen = ({ navigation }) => {
               accessibilityHint="Opens Splitwise in your browser to authorize access"
             >
               {loading ? "Connecting..." : "Connect with Splitwise"}
-            </Button>
+            </HapticButton>
 
             <Text variant="bodySmall" style={styles.helperText}>
               You'll be redirected to Splitwise to authorize access

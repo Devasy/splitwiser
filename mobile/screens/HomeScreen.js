@@ -4,14 +4,15 @@ import {
   ActivityIndicator,
   Appbar,
   Avatar,
-  Button,
-  Card,
   Modal,
   Portal,
   Text,
   TextInput,
   useTheme,
 } from "react-native-paper";
+import HapticButton from '../components/ui/HapticButton';
+import HapticCard from '../components/ui/HapticCard';
+import { HapticAppbarAction } from '../components/ui/HapticAppbar';
 import * as Haptics from "expo-haptics";
 import { createGroup, getGroups, getOptimizedSettlements } from "../api/groups";
 import { AuthContext } from "../context/AuthContext";
@@ -176,7 +177,7 @@ const HomeScreen = ({ navigation }) => {
       item.imageUrl && /^(https?:|data:image)/.test(item.imageUrl);
     const groupIcon = item.imageUrl || item.name?.charAt(0) || "?";
     return (
-      <Card
+      <HapticCard
         style={styles.card}
         onPress={() =>
           navigation.navigate("GroupDetails", {
@@ -189,7 +190,7 @@ const HomeScreen = ({ navigation }) => {
         accessibilityLabel={`Group ${item.name}. ${getSettlementStatusText()}`}
         accessibilityHint="Double tap to view group details"
       >
-        <Card.Title
+        <HapticCard.Title
           title={item.name}
           left={(props) =>
             isImage ? (
@@ -199,12 +200,12 @@ const HomeScreen = ({ navigation }) => {
             )
           }
         />
-        <Card.Content>
+        <HapticCard.Content>
           <Text style={[styles.settlementStatus, { color: getStatusColor() }]}>
             {getSettlementStatusText()}
           </Text>
-        </Card.Content>
-      </Card>
+        </HapticCard.Content>
+      </HapticCard>
     );
   };
 
@@ -224,7 +225,7 @@ const HomeScreen = ({ navigation }) => {
             style={styles.input}
             accessibilityLabel="New group name"
           />
-          <Button
+          <HapticButton
             mode="contained"
             onPress={handleCreateGroup}
             loading={isCreatingGroup}
@@ -233,19 +234,19 @@ const HomeScreen = ({ navigation }) => {
             accessibilityRole="button"
           >
             Create
-          </Button>
+          </HapticButton>
         </Modal>
       </Portal>
 
       <Appbar.Header>
         <Appbar.Content title="Your Groups" />
-        <Appbar.Action
+        <HapticAppbarAction
           icon="plus"
           onPress={showModal}
           accessibilityLabel="Create new group"
           accessibilityRole="button"
         />
-        <Appbar.Action
+        <HapticAppbarAction
           icon="account-plus"
           onPress={() =>
             navigation.navigate("JoinGroup", { onGroupJoined: fetchGroups })

@@ -1,6 +1,8 @@
 import { useContext, useState } from "react";
 import { Alert, StyleSheet, View } from "react-native";
-import { Appbar, Button, TextInput, Title } from "react-native-paper";
+import { Appbar, TextInput, Title } from "react-native-paper";
+import HapticButton from '../components/ui/HapticButton';
+import { HapticAppbarBackAction } from '../components/ui/HapticAppbar';
 import { joinGroup } from "../api/groups";
 import { AuthContext } from "../context/AuthContext";
 
@@ -35,7 +37,7 @@ const JoinGroupScreen = ({ navigation, route }) => {
   return (
     <View style={styles.container}>
       <Appbar.Header>
-        <Appbar.BackAction onPress={() => navigation.goBack()} />
+        <HapticAppbarBackAction onPress={() => navigation.goBack()} />
         <Appbar.Content title="Join a Group" />
       </Appbar.Header>
       <View style={styles.content}>
@@ -48,7 +50,7 @@ const JoinGroupScreen = ({ navigation, route }) => {
           autoCapitalize="characters"
           accessibilityLabel="Group Join Code"
         />
-        <Button
+        <HapticButton
           mode="contained"
           onPress={handleJoinGroup}
           loading={isJoining}
@@ -58,7 +60,7 @@ const JoinGroupScreen = ({ navigation, route }) => {
           accessibilityRole="button"
         >
           Join Group
-        </Button>
+        </HapticButton>
       </View>
     </View>
   );

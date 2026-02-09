@@ -13,7 +13,7 @@ export const PasswordStrength: React.FC<PasswordStrengthProps> = ({ password = '
   const { score, label, metCriteria } = useMemo(() => {
     let s = 0;
     const criteria = {
-      length: password.length >= 8,
+      length: password.length >= 6,
       hasUpper: /[A-Z]/.test(password),
       hasLower: /[a-z]/.test(password),
       hasNumber: /[0-9]/.test(password),
@@ -101,7 +101,7 @@ export const PasswordStrength: React.FC<PasswordStrengthProps> = ({ password = '
       <div className="grid grid-cols-2 gap-y-1 gap-x-4 text-[10px] text-gray-500 dark:text-gray-400 transition-opacity duration-300">
           <div className={`flex items-center gap-1.5 ${metCriteria.length ? 'text-green-600 dark:text-green-400 font-bold' : ''}`}>
             {metCriteria.length ? <Check size={12} strokeWidth={3} /> : <div className="w-3" />}
-            8+ characters
+            6+ characters
           </div>
           <div className={`flex items-center gap-1.5 ${(metCriteria.hasUpper && metCriteria.hasLower) ? 'text-green-600 dark:text-green-400 font-bold' : ''}`}>
              {(metCriteria.hasUpper && metCriteria.hasLower) ? <Check size={12} strokeWidth={3} /> : <div className="w-3" />}
