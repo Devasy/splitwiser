@@ -118,10 +118,10 @@ export const PasswordStrength: React.FC<PasswordStrengthProps> = ({ password = '
       </div>
 
       {/* Hidden live region for accessibility */}
-      <div className="sr-only" role="status" aria-live="polite">
+      <output className="sr-only" aria-live="polite">
         Password strength: {label}.
         {score < 4 && label ? "Add more characters, numbers, or symbols to strengthen." : ""}
-      </div>
+      </output>
     </div>
   );
 };
