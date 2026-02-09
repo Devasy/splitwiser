@@ -2,13 +2,13 @@ import { useContext, useEffect, useState } from "react";
 import { Alert, FlatList, RefreshControl, StyleSheet, Text, View } from "react-native";
 import {
   ActivityIndicator,
-  Card,
-  FAB,
-  IconButton,
   Paragraph,
   Title,
   useTheme,
 } from "react-native-paper";
+import HapticCard from '../components/ui/HapticCard';
+import HapticFAB from '../components/ui/HapticFAB';
+import HapticIconButton from '../components/ui/HapticIconButton';
 import * as Haptics from "expo-haptics";
 import {
   getGroupExpenses,
@@ -65,7 +65,7 @@ const GroupDetailsScreen = ({ route, navigation }) => {
     navigation.setOptions({
       title: groupName,
       headerRight: () => (
-        <IconButton
+        <HapticIconButton
           icon="cog"
           onPress={() => navigation.navigate("GroupSettings", { groupId })}
           accessibilityLabel="Group settings"
@@ -103,22 +103,22 @@ const GroupDetailsScreen = ({ route, navigation }) => {
     }
 
     return (
-      <Card
+      <HapticCard
         style={styles.card}
         accessibilityRole="button"
         accessibilityLabel={`Expense: ${item.description}, Amount: ${formatCurrency(
           item.amount
         )}. Paid by ${getMemberName(item.paidBy || item.createdBy)}. ${balanceText}`}
       >
-        <Card.Content>
+        <HapticCard.Content>
           <Title>{item.description}</Title>
           <Paragraph>Amount: {formatCurrency(item.amount)}</Paragraph>
           <Paragraph>
             Paid by: {getMemberName(item.paidBy || item.createdBy)}
           </Paragraph>
           <Paragraph style={{ color: balanceColor }}>{balanceText}</Paragraph>
-        </Card.Content>
-      </Card>
+        </HapticCard.Content>
+      </HapticCard>
     );
   };
 
@@ -198,12 +198,12 @@ const GroupDetailsScreen = ({ route, navigation }) => {
 
   const renderHeader = () => (
     <>
-      <Card style={styles.card}>
-        <Card.Content>
+      <HapticCard style={styles.card}>
+        <HapticCard.Content>
           <Title>Settlement Summary</Title>
           {renderSettlementSummary()}
-        </Card.Content>
-      </Card>
+        </HapticCard.Content>
+      </HapticCard>
 
       <Title style={styles.expensesTitle}>Expenses</Title>
     </>
@@ -231,7 +231,7 @@ const GroupDetailsScreen = ({ route, navigation }) => {
         }
       />
 
-      <FAB
+      <HapticFAB
         style={styles.fab}
         icon="plus"
         onPress={() => navigation.navigate("AddExpense", { groupId: groupId })}

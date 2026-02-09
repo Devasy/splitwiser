@@ -8,15 +8,15 @@ import {
 } from "react-native";
 import {
   ActivityIndicator,
-  Button,
-  Checkbox,
-  Menu,
   Paragraph,
-  SegmentedButtons,
   Text,
   TextInput,
   Title,
 } from "react-native-paper";
+import HapticButton from '../components/ui/HapticButton';
+import HapticCheckboxItem from '../components/ui/HapticCheckbox';
+import HapticMenu from '../components/ui/HapticMenu';
+import HapticSegmentedButtons from '../components/ui/HapticSegmentedButtons';
 import { createExpense, getGroupMembers } from "../api/groups";
 import { AuthContext } from "../context/AuthContext";
 
@@ -277,7 +277,7 @@ const AddExpenseScreen = ({ route, navigation }) => {
     switch (splitMethod) {
       case "equal":
         return members.map((member) => (
-          <Checkbox.Item
+          <HapticCheckboxItem
             key={member.userId}
             label={member.user.name}
             status={selectedMembers[member.userId] ? "checked" : "unchecked"}
@@ -370,22 +370,22 @@ const AddExpenseScreen = ({ route, navigation }) => {
           accessibilityLabel="Expense Amount"
         />
 
-        <Menu
+        <HapticMenu
           visible={menuVisible}
           onDismiss={() => setMenuVisible(false)}
           anchor={
-            <Button
+            <HapticButton
               onPress={() => setMenuVisible(true)}
               accessibilityLabel={`Paid by ${selectedPayerName}`}
               accessibilityRole="button"
               accessibilityHint="Double tap to change payer"
             >
               Paid by: {selectedPayerName}
-            </Button>
+            </HapticButton>
           }
         >
           {members.map((member) => (
-            <Menu.Item
+            <HapticMenu.Item
               key={member.userId}
               onPress={() => {
                 setPayerId(member.userId);
@@ -394,10 +394,10 @@ const AddExpenseScreen = ({ route, navigation }) => {
               title={member.user.name}
             />
           ))}
-        </Menu>
+        </HapticMenu>
 
         <Title style={styles.splitTitle}>Split Method</Title>
-        <SegmentedButtons
+        <HapticSegmentedButtons
           value={splitMethod}
           onValueChange={setSplitMethod}
           buttons={[
@@ -451,7 +451,7 @@ const AddExpenseScreen = ({ route, navigation }) => {
 
         <View style={styles.splitInputsContainer}>{renderSplitInputs()}</View>
 
-        <Button
+        <HapticButton
           mode="contained"
           onPress={handleAddExpense}
           style={styles.button}
@@ -461,7 +461,7 @@ const AddExpenseScreen = ({ route, navigation }) => {
           accessibilityRole="button"
         >
           Add Expense
-        </Button>
+        </HapticButton>
       </View>
     </KeyboardAvoidingView>
   );

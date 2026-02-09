@@ -7,6 +7,13 @@
 ## [Unreleased]
 
 ### Added
+- **Mobile Haptics:** Implemented system-wide haptic feedback for all interactive elements.
+  - **Features:**
+    - Created `HapticButton`, `HapticIconButton`, `HapticFAB`, `HapticCard`, `HapticList`, `HapticCheckbox`, `HapticMenu`, `HapticSegmentedButtons`, `HapticAppbar` (including `HapticAppbarAction`, `HapticAppbarBackAction`) wrappers.
+    - Integrated into all screens (`Home`, `GroupDetails`, `AddExpense`, `Friends`, `Account`, `EditProfile`, `Login`, `Signup`, `JoinGroup`, `GroupSettings`, `SplitwiseImport`).
+    - Uses `expo-haptics` with `Light` impact style for subtle feedback.
+  - **Technical:** Centralized haptic logic in `mobile/components/ui/` to ensure consistency and maintainability.
+
 - **Mobile Accessibility:** Completed accessibility audit for all mobile screens.
   - **Features:**
     - Added `accessibilityLabel` to all interactive elements (buttons, inputs, list items).
