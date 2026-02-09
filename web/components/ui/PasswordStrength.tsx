@@ -71,7 +71,7 @@ export const PasswordStrength: React.FC<PasswordStrengthProps> = ({ password = '
   if (!password) return null;
 
   return (
-    <div className="w-full flex flex-col gap-2 mt-2" aria-label="Password strength indicator">
+    <div className="w-full flex flex-col gap-2 mt-2" role="region" aria-label="Password strength indicator">
       {/* Strength Bar */}
       <div className="flex w-full gap-1 h-2">
         {[1, 2, 3, 4].map((level) => (
