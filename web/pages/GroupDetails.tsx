@@ -3,6 +3,7 @@ import { ArrowRight, Banknote, Check, Copy, DollarSign, Hash, Layers, LogOut, Pi
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { AnalyticsContent } from '../components/AnalyticsContent';
+import { SettledUpState } from '../components/SettledUpState';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Modal } from '../components/ui/Modal';
@@ -847,13 +848,7 @@ export const GroupDetails = () => {
                             </motion.div>
                         ))}
                         {!loading && settlements.length === 0 && (
-                            <div className="col-span-full text-center py-20">
-                                <div className={`w-24 h-24 flex items-center justify-center mx-auto mb-6 ${style === THEMES.NEOBRUTALISM ? 'bg-emerald-100 border-2 border-black rounded-none' : 'bg-emerald-100 dark:bg-emerald-900/20 rounded-full'}`}>
-                                    <Check size={48} className={style === THEMES.NEOBRUTALISM ? 'text-black' : 'text-emerald-500'} />
-                                </div>
-                                <h3 className={`text-2xl font-black ${style === THEMES.NEOBRUTALISM ? 'text-black' : 'text-emerald-500'}`}>All Settled Up!</h3>
-                                <p className="opacity-60">No outstanding balances in this group.</p>
-                            </div>
+                            <SettledUpState />
                         )}
                     </motion.div>
                 )}
