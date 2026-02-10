@@ -106,7 +106,7 @@ jobs:
 
     - name: Upload RN Bundle Analysis Report
       if: always() && hashFiles('mobile/bundle-analysis.md') != ''
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       with:
         name: rn-bundle-analysis-report
         path: mobile/bundle-analysis.md
