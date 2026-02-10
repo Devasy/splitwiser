@@ -1,7 +1,6 @@
 import { useContext, useEffect, useState } from "react";
 import { Alert, FlatList, RefreshControl, StyleSheet, View } from "react-native";
 import {
-  ActivityIndicator,
   Appbar,
   Avatar,
   Modal,
@@ -17,6 +16,7 @@ import * as Haptics from "expo-haptics";
 import { createGroup, getGroups, getOptimizedSettlements } from "../api/groups";
 import { AuthContext } from "../context/AuthContext";
 import { formatCurrency, getCurrencySymbol } from "../utils/currency";
+import GroupSkeleton from "../components/GroupSkeleton";
 
 const HomeScreen = ({ navigation }) => {
   const { token, logout, user } = useContext(AuthContext);
@@ -257,9 +257,7 @@ const HomeScreen = ({ navigation }) => {
       </Appbar.Header>
 
       {isLoading ? (
-        <View style={styles.loaderContainer}>
-          <ActivityIndicator size="large" />
-        </View>
+        <GroupSkeleton />
       ) : (
         <FlatList
           data={groups}

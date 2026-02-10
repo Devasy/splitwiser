@@ -61,6 +61,13 @@
 - Toast notification system (`ToastContext`, `Toast` component) for providing non-blocking user feedback.
 - Keyboard navigation support for Groups page, enabling accessibility for power users.
 
+- **Mobile App:** Replaced generic loading spinner on Home Screen with a custom `GroupSkeleton` component.
+  - **Features:**
+    - Mimics actual list layout (Avatar + Title + Subtitle).
+    - Pulsing opacity animation using `Animated` API.
+    - Adapts to theme colors using `react-native-paper`'s `useTheme` (`surfaceVariant`).
+  - **Technical:** Created `mobile/components/GroupSkeleton.js`, integrated into `mobile/screens/HomeScreen.js`.
+
 ### Changed
 - **Web App:** Refactored `GroupDetails` destructive actions (Delete Group, Delete Expense, Leave Group, Remove Member) to use the new `ConfirmDialog` instead of `window.confirm`.
 - **Accessibility:** Updated `Modal` component to include proper ARIA roles and labels, fixing a long-standing accessibility gap.
