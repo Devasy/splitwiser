@@ -45,3 +45,6 @@ export const updateMemberRole = (groupId, memberId, role) =>
 
 export const removeMember = (groupId, memberId) =>
   apiClient.delete(`/groups/${groupId}/members/${memberId}`);
+
+export const deleteExpense = (groupId, expenseId) =>
+  apiClient.delete(`/groups/${groupId}/expenses/${expenseId}`);
