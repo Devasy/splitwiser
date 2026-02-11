@@ -1,16 +1,19 @@
-import { useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import { Alert, FlatList, RefreshControl, StyleSheet, Text, View } from "react-native";
 import {
   ActivityIndicator,
   Paragraph,
+  Snackbar,
   Title,
   useTheme,
 } from "react-native-paper";
 import HapticCard from '../components/ui/HapticCard';
 import HapticFAB from '../components/ui/HapticFAB';
 import HapticIconButton from '../components/ui/HapticIconButton';
+import SwipeableExpenseRow from "../components/SwipeableExpenseRow";
 import * as Haptics from "expo-haptics";
 import {
+  deleteExpense,
   getGroupExpenses,
   getGroupMembers,
   getOptimizedSettlements,
@@ -26,6 +29,9 @@ const GroupDetailsScreen = ({ route, navigation }) => {
   const [settlements, setSettlements] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [deletedExpenseId, setDeletedExpenseId] = useState(null);
+  const [snackbarVisible, setSnackbarVisible] = useState(false);
+  const deletedExpenseIdRef = useRef(null);
 
   // Currency configuration - can be made configurable later
   const currency = "₹"; // Default to INR, can be changed to '$' for USD
@@ -60,6 +66,57 @@ const GroupDetailsScreen = ({ route, navigation }) => {
     await fetchData(false);
     setIsRefreshing(false);
   };
+
+  const handleDeleteExpense = (expenseId) => {
+    if (deletedExpenseId) {
+      commitDeletion(deletedExpenseId);
+    }
+    setDeletedExpenseId(expenseId);
+    deletedExpenseIdRef.current = expenseId;
+    setSnackbarVisible(true);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  };
+
+  const commitDeletion = async (id) => {
+    deletedExpenseIdRef.current = null;
+
+    // Optimistic update
+    setExpenses((prev) => prev.filter((e) => e._id !== id));
+
+    try {
+      await deleteExpense(groupId, id);
+      const settlementsResponse = await getOptimizedSettlements(groupId);
+      setSettlements(settlementsResponse.data.optimizedSettlements || []);
+    } catch (error) {
+      console.error("Failed to delete expense:", error);
+      Alert.alert("Error", "Failed to delete expense.");
+      fetchData(false);
+    }
+  };
+
+  const onUndo = () => {
+    setDeletedExpenseId(null);
+    deletedExpenseIdRef.current = null;
+    setSnackbarVisible(false);
+  };
+
+  const onDismissSnackbar = () => {
+    setSnackbarVisible(false);
+    if (deletedExpenseId) {
+      commitDeletion(deletedExpenseId);
+      setDeletedExpenseId(null);
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      if (deletedExpenseIdRef.current) {
+        deleteExpense(groupId, deletedExpenseIdRef.current).catch((err) =>
+          console.error("Unmount delete failed", err)
+        );
+      }
+    };
+  }, [groupId]);
 
   useEffect(() => {
     navigation.setOptions({
@@ -103,22 +160,28 @@ const GroupDetailsScreen = ({ route, navigation }) => {
     }
 
     return (
-      <HapticCard
+      <SwipeableExpenseRow
+        onDelete={() => handleDeleteExpense(item._id)}
         style={styles.card}
-        accessibilityRole="button"
-        accessibilityLabel={`Expense: ${item.description}, Amount: ${formatCurrency(
-          item.amount
-        )}. Paid by ${getMemberName(item.paidBy || item.createdBy)}. ${balanceText}`}
+        deleteColor={theme.colors.error}
       >
-        <HapticCard.Content>
-          <Title>{item.description}</Title>
-          <Paragraph>Amount: {formatCurrency(item.amount)}</Paragraph>
-          <Paragraph>
-            Paid by: {getMemberName(item.paidBy || item.createdBy)}
-          </Paragraph>
-          <Paragraph style={{ color: balanceColor }}>{balanceText}</Paragraph>
-        </HapticCard.Content>
-      </HapticCard>
+        <HapticCard
+          style={{ marginBottom: 0 }}
+          accessibilityRole="button"
+          accessibilityLabel={`Expense: ${item.description}, Amount: ${formatCurrency(
+            item.amount
+          )}. Paid by ${getMemberName(item.paidBy || item.createdBy)}. ${balanceText}`}
+        >
+          <HapticCard.Content>
+            <Title>{item.description}</Title>
+            <Paragraph>Amount: {formatCurrency(item.amount)}</Paragraph>
+            <Paragraph>
+              Paid by: {getMemberName(item.paidBy || item.createdBy)}
+            </Paragraph>
+            <Paragraph style={{ color: balanceColor }}>{balanceText}</Paragraph>
+          </HapticCard.Content>
+        </HapticCard>
+      </SwipeableExpenseRow>
     );
   };
 
@@ -213,7 +276,7 @@ const GroupDetailsScreen = ({ route, navigation }) => {
     <View style={styles.container}>
       <FlatList
         style={styles.contentContainer}
-        data={expenses}
+        data={expenses.filter((e) => e._id !== deletedExpenseId)}
         renderItem={renderExpense}
         keyExtractor={(item) => item._id}
         ListHeaderComponent={renderHeader}
@@ -238,6 +301,19 @@ const GroupDetailsScreen = ({ route, navigation }) => {
         accessibilityLabel="Add expense"
         accessibilityRole="button"
       />
+
+      <Snackbar
+        visible={snackbarVisible}
+        onDismiss={onDismissSnackbar}
+        action={{
+          label: "Undo",
+          onPress: onUndo,
+        }}
+        duration={4000}
+        style={{ marginBottom: 80 }}
+      >
+        Expense deleted
+      </Snackbar>
     </View>
   );
 };

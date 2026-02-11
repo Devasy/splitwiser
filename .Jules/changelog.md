@@ -7,6 +7,15 @@
 ## [Unreleased]
 
 ### Added
+- **Mobile Swipe-to-Delete:** Implemented intuitive swipe gestures for deleting expenses in group details.
+  - **Features:**
+    - Swipe left to reveal a delete action (themed with error color).
+    - Optimistic UI updates to immediately hide the deleted item, preventing flicker.
+    - "Undo" Snackbar notification allowing users to cancel accidental deletions.
+    - Robust unmount handling to ensure pending deletions are committed if the user navigates away.
+    - Haptic feedback on delete triggering.
+  - **Technical:** Integrated `react-native-gesture-handler` and `react-native-reanimated`. Created `mobile/components/SwipeableExpenseRow.js`. Updated `mobile/screens/GroupDetailsScreen.js`.
+
 - **Password Strength Meter:** Added a visual password strength indicator to the signup form.
   - **Features:**
     - Real-time strength calculation (Length, Uppercase, Lowercase, Number, Symbol).

@@ -285,6 +285,29 @@ const clearFieldError = (field: string) => {
 
 ## Mobile Patterns
 
+### Swipe-to-Delete with Undo
+
+**Date:** 2026-02-12
+**Context:** Implementing expense deletion in GroupDetails
+
+To implement a robust "Swipe to Delete" with Undo capability in React Native:
+
+1.  **Dependencies**: Use `react-native-gesture-handler` (with `GestureHandlerRootView` at root) and `react-native-reanimated`.
+2.  **Optimistic UI**: Update local state *immediately* to remove the item. Do not wait for API. This prevents flickering.
+3.  **Persistence on Unmount**: Use a `useRef` to track pending deletions. In `useEffect` cleanup, force-commit the deletion if the user navigates away while the "Undo" snackbar is visible.
+4.  **Theme Integration**: Pass theme colors (e.g., `theme.colors.error`) to the swipeable component for consistency.
+
+```javascript
+// Example Cleanup Pattern
+useEffect(() => {
+  return () => {
+    if (pendingDeleteIdRef.current) {
+      api.delete(pendingDeleteIdRef.current);
+    }
+  };
+}, []);
+```
+
 ### React Native Paper Components
 
 **Date:** 2026-01-01
@@ -577,8 +600,6 @@ _Document errors and their solutions here as you encounter them._
 - Error Boundaries only catch errors in Render/Lifecycle, NOT event handlers.
 - Verification requires triggering an error during render (e.g., conditional throw).
 - Must wrap Router if using `useNavigate` or `Link` in fallback.
-
----
 
 ### ✅ Successful PR Pattern: Toast Notification System (#227)
 
