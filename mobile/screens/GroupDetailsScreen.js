@@ -1,19 +1,22 @@
-import { useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useState, useRef } from "react";
 import { Alert, FlatList, RefreshControl, StyleSheet, Text, View } from "react-native";
 import {
   ActivityIndicator,
   Paragraph,
   Title,
   useTheme,
+  Snackbar,
 } from "react-native-paper";
 import HapticCard from '../components/ui/HapticCard';
 import HapticFAB from '../components/ui/HapticFAB';
 import HapticIconButton from '../components/ui/HapticIconButton';
+import SwipeableExpenseRow from '../components/SwipeableExpenseRow';
 import * as Haptics from "expo-haptics";
 import {
   getGroupExpenses,
   getGroupMembers,
   getOptimizedSettlements,
+  deleteExpense,
 } from "../api/groups";
 import { AuthContext } from "../context/AuthContext";
 
@@ -26,12 +29,67 @@ const GroupDetailsScreen = ({ route, navigation }) => {
   const [settlements, setSettlements] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [visible, setVisible] = useState(false);
+  const [pendingExpense, setPendingExpense] = useState(null);
+  const undoTimeoutRef = useRef(null);
 
   // Currency configuration - can be made configurable later
   const currency = "₹"; // Default to INR, can be changed to '$' for USD
 
   // Helper function to format currency amounts
   const formatCurrency = (amount) => `${currency}${amount.toFixed(2)}`;
+
+  const commitPendingDelete = async (expense) => {
+    try {
+      await deleteExpense(groupId, expense._id);
+    } catch (error) {
+      console.error("Failed to delete expense:", error);
+      Alert.alert("Error", "Failed to delete expense.");
+    }
+  };
+
+  const handleDelete = (expense) => {
+    if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current);
+
+    // If there is already a pending delete, commit it immediately
+    if (pendingExpense) {
+      commitPendingDelete(pendingExpense);
+    }
+
+    setPendingExpense(expense);
+    setExpenses((prev) => prev.filter((e) => e._id !== expense._id));
+    setVisible(true);
+
+    undoTimeoutRef.current = setTimeout(async () => {
+      await commitPendingDelete(expense);
+      setPendingExpense((prev) => (prev?._id === expense._id ? null : prev));
+    }, 4000);
+  };
+
+  const onUndo = () => {
+    if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current);
+    if (pendingExpense) {
+      setExpenses((prev) => [pendingExpense, ...prev]);
+      setPendingExpense(null);
+    }
+    setVisible(false);
+  };
+
+  const onDismissSnackBar = () => {
+    setVisible(false);
+    if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current);
+    // Force commit if dismissed manually
+    if (pendingExpense) {
+      commitPendingDelete(pendingExpense);
+      setPendingExpense(null);
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current);
+    };
+  }, []);
 
   const fetchData = async (showLoading = true) => {
     try {
@@ -103,22 +161,24 @@ const GroupDetailsScreen = ({ route, navigation }) => {
     }
 
     return (
-      <HapticCard
-        style={styles.card}
-        accessibilityRole="button"
-        accessibilityLabel={`Expense: ${item.description}, Amount: ${formatCurrency(
-          item.amount
-        )}. Paid by ${getMemberName(item.paidBy || item.createdBy)}. ${balanceText}`}
-      >
-        <HapticCard.Content>
-          <Title>{item.description}</Title>
-          <Paragraph>Amount: {formatCurrency(item.amount)}</Paragraph>
-          <Paragraph>
-            Paid by: {getMemberName(item.paidBy || item.createdBy)}
-          </Paragraph>
-          <Paragraph style={{ color: balanceColor }}>{balanceText}</Paragraph>
-        </HapticCard.Content>
-      </HapticCard>
+      <SwipeableExpenseRow onSwipeableOpen={() => handleDelete(item)}>
+        <HapticCard
+          style={styles.card}
+          accessibilityRole="button"
+          accessibilityLabel={`Expense: ${item.description}, Amount: ${formatCurrency(
+            item.amount
+          )}. Paid by ${getMemberName(item.paidBy || item.createdBy)}. ${balanceText}`}
+        >
+          <HapticCard.Content>
+            <Title>{item.description}</Title>
+            <Paragraph>Amount: {formatCurrency(item.amount)}</Paragraph>
+            <Paragraph>
+              Paid by: {getMemberName(item.paidBy || item.createdBy)}
+            </Paragraph>
+            <Paragraph style={{ color: balanceColor }}>{balanceText}</Paragraph>
+          </HapticCard.Content>
+        </HapticCard>
+      </SwipeableExpenseRow>
     );
   };
 
@@ -238,6 +298,17 @@ const GroupDetailsScreen = ({ route, navigation }) => {
         accessibilityLabel="Add expense"
         accessibilityRole="button"
       />
+      <Snackbar
+        visible={visible}
+        onDismiss={onDismissSnackBar}
+        action={{
+          label: 'Undo',
+          onPress: onUndo,
+        }}
+        duration={4000}
+      >
+        Expense deleted.
+      </Snackbar>
     </View>
   );
 };

@@ -8,6 +8,9 @@ export const getOptimizedSettlements = (groupId) =>
 export const createExpense = (groupId, expenseData) =>
   apiClient.post(`/groups/${groupId}/expenses`, expenseData);
 
+export const deleteExpense = (groupId, expenseId) =>
+  apiClient.delete(`/groups/${groupId}/expenses/${expenseId}`);
+
 export const getGroupDetails = (groupId) => {
   return Promise.all([getGroupMembers(groupId), getGroupExpenses(groupId)]);
 };
