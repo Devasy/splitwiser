@@ -299,6 +299,32 @@ Commonly used components:
 - `<Portal>` and `<Modal>` for overlays
 - `<ActivityIndicator>` for loading states
 
+### Mobile Skeleton Loading Pattern
+
+**Date:** 2026-02-14
+**Context:** Creating loading states for mobile lists
+
+To create smooth skeleton loaders in React Native without external libraries:
+
+```javascript
+// 1. Create base Skeleton component
+const opacity = useRef(new Animated.Value(0.3)).current;
+useEffect(() => {
+  Animated.loop(
+    Animated.sequence([
+      Animated.timing(opacity, { toValue: 0.7, duration: 800, useNativeDriver: true }),
+      Animated.timing(opacity, { toValue: 0.3, duration: 800, useNativeDriver: true })
+    ])
+  ).start();
+}, []);
+return <Animated.View style={{ opacity, backgroundColor: theme.colors.surfaceVariant }} />;
+```
+
+**Key Implementation Detail:**
+- Use `Animated.loop` with `Animated.sequence` for the pulse effect.
+- Use `react-native-paper`'s `useTheme` to ensure the skeleton color works in both light and dark modes (`surfaceVariant` is a good choice).
+- Compose these primitives into `CardSkeleton` components that match the structure of the real content card.
+
 ### Safe Area Pattern
 
 **Date:** 2026-01-01

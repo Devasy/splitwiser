@@ -7,6 +7,13 @@
 ## [Unreleased]
 
 ### Added
+- **Mobile Skeleton Loading:** Implemented skeleton loading state for the Home screen group list.
+  - **Features:**
+    - Created reusable `Skeleton` component with pulsing opacity animation.
+    - Created `GroupCardSkeleton` mimicking the exact layout of group cards.
+    - Replaced the full-screen spinner with a list of skeletons to reduce perceived latency.
+    - Wrapped in accessible container (`accessibilityLabel="Loading groups"`).
+  - **Technical:** Uses `Animated.loop` for performance and `useTheme` for dark mode support.
 - **Password Strength Meter:** Added a visual password strength indicator to the signup form.
   - **Features:**
     - Real-time strength calculation (Length, Uppercase, Lowercase, Number, Symbol).
