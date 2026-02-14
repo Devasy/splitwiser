@@ -317,6 +317,31 @@ When building mobile screens with React Native Paper:
 3.  **Hints:** Use `accessibilityHint` for non-obvious actions (e.g., "Double tap to delete").
 4.  **State:** For custom checkboxes or toggles, use `accessibilityState={{ checked: boolean }}`.
 
+### Skeleton Loading Pattern
+
+**Date:** 2026-02-12
+**Context:** Implementing HomeScreen skeletons
+
+To create professional loading states in React Native:
+
+1.  **Base Component:** Create a `Skeleton` component using `Animated` for pulsing opacity.
+    *   Use `useTheme` to set background color (e.g., `theme.colors.surfaceVariant`).
+    *   Use `useNativeDriver: true` for performance.
+2.  **Layout Mirroring:** Create a specific skeleton component (e.g., `GroupCardSkeleton`) that mirrors the actual component's layout using `Card`, `View`, and spacing.
+3.  **Integration:**
+    *   Replace `ActivityIndicator` with a list of skeletons.
+    *   Wrap in a `View` with `accessible={true}` and `accessibilityLabel="Loading..."`.
+
+```javascript
+// Animation Logic
+Animated.loop(
+  Animated.sequence([
+    Animated.timing(opacity, { toValue: 0.7, duration: 800, useNativeDriver: true }),
+    Animated.timing(opacity, { toValue: 0.3, duration: 800, useNativeDriver: true }),
+  ])
+).start();
+```
+
 ---
 
 ## API Response Patterns
