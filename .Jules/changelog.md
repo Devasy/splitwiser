@@ -7,6 +7,14 @@
 ## [Unreleased]
 
 ### Added
+- **Mobile Skeleton Loading:** Implemented a skeleton loading state for the Home screen group list.
+  - **Features:**
+    - Created reusable `Skeleton` component with pulsing animation.
+    - Created `GroupCardSkeleton` mimicking the exact layout of group cards.
+    - Replaced `ActivityIndicator` with a list of skeletons for a smoother loading experience.
+    - Maintained theme consistency using `surfaceVariant` color.
+  - **Technical:** Created `mobile/components/ui/Skeleton.js`, `mobile/components/skeletons/GroupCardSkeleton.js`. Updated `mobile/screens/HomeScreen.js`.
+
 - **Password Strength Meter:** Added a visual password strength indicator to the signup form.
   - **Features:**
     - Real-time strength calculation (Length, Uppercase, Lowercase, Number, Symbol).

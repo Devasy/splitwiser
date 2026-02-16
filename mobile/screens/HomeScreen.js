@@ -1,7 +1,6 @@
 import { useContext, useEffect, useState } from "react";
-import { Alert, FlatList, RefreshControl, StyleSheet, View } from "react-native";
+import { Alert, FlatList, RefreshControl, ScrollView, StyleSheet, View } from "react-native";
 import {
-  ActivityIndicator,
   Appbar,
   Avatar,
   Modal,
@@ -13,6 +12,7 @@ import {
 import HapticButton from '../components/ui/HapticButton';
 import HapticCard from '../components/ui/HapticCard';
 import { HapticAppbarAction } from '../components/ui/HapticAppbar';
+import GroupCardSkeleton from '../components/skeletons/GroupCardSkeleton';
 import * as Haptics from "expo-haptics";
 import { createGroup, getGroups, getOptimizedSettlements } from "../api/groups";
 import { AuthContext } from "../context/AuthContext";
@@ -257,9 +257,11 @@ const HomeScreen = ({ navigation }) => {
       </Appbar.Header>
 
       {isLoading ? (
-        <View style={styles.loaderContainer}>
-          <ActivityIndicator size="large" />
-        </View>
+        <ScrollView style={styles.list} accessible={true} accessibilityLabel="Loading groups">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <GroupCardSkeleton key={i} index={i} />
+          ))}
+        </ScrollView>
       ) : (
         <FlatList
           data={groups}
@@ -288,11 +290,6 @@ const HomeScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  loaderContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
   },
   list: {
     padding: 16,
