@@ -3,15 +3,19 @@ import { StyleSheet } from 'react-native';
 import { Card } from 'react-native-paper';
 import Skeleton from '../ui/Skeleton';
 
-const GroupCardSkeleton = () => {
+const GroupCardSkeleton = ({ index = 0 }) => {
+  // Deterministic random-looking widths based on index
+  const titleWidth = 100 + ((index * 37) % 60); // 100 - 159
+  const subtitleWidth = 140 + ((index * 53) % 90); // 140 - 229
+
   return (
     <Card style={styles.card}>
       <Card.Title
-        title={<Skeleton width={120} height={20} />}
+        title={<Skeleton width={titleWidth} height={20} />}
         left={() => <Skeleton width={40} height={40} borderRadius={20} />}
       />
       <Card.Content>
-        <Skeleton width={200} height={16} style={styles.subtitle} />
+        <Skeleton width={subtitleWidth} height={16} style={styles.subtitle} />
       </Card.Content>
     </Card>
   );

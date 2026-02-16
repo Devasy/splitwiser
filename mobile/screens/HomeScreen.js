@@ -1,5 +1,5 @@
 import { useContext, useEffect, useState } from "react";
-import { Alert, FlatList, RefreshControl, StyleSheet, View } from "react-native";
+import { Alert, FlatList, RefreshControl, ScrollView, StyleSheet, View } from "react-native";
 import {
   Appbar,
   Avatar,
@@ -257,11 +257,11 @@ const HomeScreen = ({ navigation }) => {
       </Appbar.Header>
 
       {isLoading ? (
-        <View style={styles.list} accessible={true} accessibilityLabel="Loading groups">
+        <ScrollView style={styles.list} accessible={true} accessibilityLabel="Loading groups">
           {[1, 2, 3, 4, 5, 6].map((i) => (
-            <GroupCardSkeleton key={i} />
+            <GroupCardSkeleton key={i} index={i} />
           ))}
-        </View>
+        </ScrollView>
       ) : (
         <FlatList
           data={groups}

@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { Animated, StyleSheet, View } from 'react-native';
+import { Animated, StyleSheet } from 'react-native';
 import { useTheme } from 'react-native-paper';
 
 const Skeleton = ({ width, height, borderRadius = 4, style }) => {
