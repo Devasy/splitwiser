@@ -299,6 +299,36 @@ Commonly used components:
 - `<Portal>` and `<Modal>` for overlays
 - `<ActivityIndicator>` for loading states
 
+### Mobile Skeleton Loading Pattern
+
+**Date:** 2026-02-13
+**Context:** Creating performant skeleton screens in React Native
+
+To create a pulsing skeleton effect without external libraries:
+
+```javascript
+// 1. Create Animated Value
+const opacity = useRef(new Animated.Value(0.3)).current;
+
+// 2. Loop Animation
+useEffect(() => {
+  const anim = Animated.loop(
+    Animated.sequence([
+      Animated.timing(opacity, { toValue: 0.7, duration: 800, useNativeDriver: true }),
+      Animated.timing(opacity, { toValue: 0.3, duration: 800, useNativeDriver: true }),
+    ])
+  );
+  anim.start();
+  return () => anim.stop();
+}, []);
+
+// 3. Render Animated.View
+<Animated.View style={{ opacity, backgroundColor: theme.colors.surfaceVariant, ... }} />
+```
+
+**Accessibility:**
+Always wrap the skeleton container with `accessibilityRole="progressbar"` and a descriptive `accessibilityLabel` so screen readers know content is loading.
+
 ### Safe Area Pattern
 
 **Date:** 2026-01-01
@@ -577,8 +607,6 @@ _Document errors and their solutions here as you encounter them._
 - Error Boundaries only catch errors in Render/Lifecycle, NOT event handlers.
 - Verification requires triggering an error during render (e.g., conditional throw).
 - Must wrap Router if using `useNavigate` or `Link` in fallback.
-
----
 
 ### ✅ Successful PR Pattern: Toast Notification System (#227)
 
