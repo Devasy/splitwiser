@@ -299,6 +299,21 @@ Commonly used components:
 - `<Portal>` and `<Modal>` for overlays
 - `<ActivityIndicator>` for loading states
 
+### Skeleton Loading Pattern
+
+**Date:** 2026-02-14
+**Context:** Implementing skeleton loading for Card components
+
+To perfectly match `Card` layout in skeletons, you can pass `Skeleton` components directly to `Card.Title` props:
+
+```javascript
+<Card.Title
+  title={<Skeleton width="60%" height={20} />}
+  left={(props) => <Skeleton width={props.size} height={props.size} borderRadius={props.size/2} />}
+/>
+```
+This ensures the skeleton aligns exactly with the content state.
+
 ### Safe Area Pattern
 
 **Date:** 2026-01-01
