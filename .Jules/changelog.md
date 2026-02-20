@@ -7,6 +7,13 @@
 ## [Unreleased]
 
 ### Added
+- **Mobile Skeleton Loading:** Implemented a reusable skeleton loading system for the mobile app.
+  - **Features:**
+    - Created `Skeleton` component with pulsing animation using `Animated` and `useTheme`.
+    - Created `GroupListSkeleton` component mimicking the layout of group cards.
+    - Integrated skeleton loading into `HomeScreen`, replacing the generic spinner.
+  - **Technical:** Created `mobile/components/ui/Skeleton.js` and `mobile/components/skeletons/GroupListSkeleton.js`. Updated `mobile/screens/HomeScreen.js`.
+
 - **Password Strength Meter:** Added a visual password strength indicator to the signup form.
   - **Features:**
     - Real-time strength calculation (Length, Uppercase, Lowercase, Number, Symbol).
