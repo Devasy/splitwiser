@@ -13,6 +13,7 @@ import {
 import HapticButton from '../components/ui/HapticButton';
 import HapticCard from '../components/ui/HapticCard';
 import { HapticAppbarAction } from '../components/ui/HapticAppbar';
+import GroupListSkeleton from '../components/skeletons/GroupListSkeleton';
 import * as Haptics from "expo-haptics";
 import { createGroup, getGroups, getOptimizedSettlements } from "../api/groups";
 import { AuthContext } from "../context/AuthContext";
@@ -257,9 +258,7 @@ const HomeScreen = ({ navigation }) => {
       </Appbar.Header>
 
       {isLoading ? (
-        <View style={styles.loaderContainer}>
-          <ActivityIndicator size="large" />
-        </View>
+        <GroupListSkeleton />
       ) : (
         <FlatList
           data={groups}
@@ -288,11 +287,6 @@ const HomeScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  loaderContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
   },
   list: {
     padding: 16,
