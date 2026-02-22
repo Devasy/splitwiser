@@ -299,6 +299,27 @@ Commonly used components:
 - `<Portal>` and `<Modal>` for overlays
 - `<ActivityIndicator>` for loading states
 
+### Skeleton Loading Pattern
+
+**Date:** 2026-02-12
+**Context:** Implemented in `HomeScreen` for better perceived performance.
+
+Use `mobile/components/ui/Skeleton.js` for building loading states:
+1. **Base Component:** `<Skeleton width={100} height={20} />`
+2. **Animation:** Uses `Animated.loop` for pulsing opacity (0.3 <-> 1.0).
+3. **Theming:** Automatically uses `theme.colors.surfaceVariant`.
+4. **Layout:** Combine multiple `Skeleton` components inside a container (e.g., `GroupListSkeleton`) that mimics the actual content layout (e.g., inside a `Card`).
+
+**Example:**
+```jsx
+<Card>
+  <Card.Title
+    title={<Skeleton width={150} height={20} />}
+    left={(props) => <Skeleton width={40} height={40} borderRadius={20} />}
+  />
+</Card>
+```
+
 ### Safe Area Pattern
 
 **Date:** 2026-01-01
