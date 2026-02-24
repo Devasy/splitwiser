@@ -306,6 +306,17 @@ Commonly used components:
 
 Most screens use `<View style={{ flex: 1 }}>` - consider wrapping in `SafeAreaView` for notched devices.
 
+### Skeleton Loading Pattern
+
+**Date:** 2026-02-09
+**Context:** Improving mobile loading states
+
+To create a skeleton loader that matches the content layout:
+
+1.  **Base Component:** Create a `Skeleton` component using `Animated` for pulsing opacity and `useTheme` for colors (`surfaceVariant`).
+2.  **Layout Component:** Create a composite skeleton (e.g., `GroupListSkeleton`) that uses `Card` (or other containers) to mimic the exact structure of the loaded content (including padding/margins).
+3.  **Integration:** Replace `ActivityIndicator` with the skeleton component in the `isLoading` state.
+
 ### Accessibility Patterns
 
 **Date:** 2026-01-29

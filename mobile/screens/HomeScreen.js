@@ -1,7 +1,6 @@
 import { useContext, useEffect, useState } from "react";
 import { Alert, FlatList, RefreshControl, StyleSheet, View } from "react-native";
 import {
-  ActivityIndicator,
   Appbar,
   Avatar,
   Modal,
@@ -15,6 +14,7 @@ import HapticCard from '../components/ui/HapticCard';
 import { HapticAppbarAction } from '../components/ui/HapticAppbar';
 import * as Haptics from "expo-haptics";
 import { createGroup, getGroups, getOptimizedSettlements } from "../api/groups";
+import GroupListSkeleton from '../components/skeletons/GroupListSkeleton';
 import { AuthContext } from "../context/AuthContext";
 import { formatCurrency, getCurrencySymbol } from "../utils/currency";
 
@@ -257,9 +257,7 @@ const HomeScreen = ({ navigation }) => {
       </Appbar.Header>
 
       {isLoading ? (
-        <View style={styles.loaderContainer}>
-          <ActivityIndicator size="large" />
-        </View>
+        <GroupListSkeleton />
       ) : (
         <FlatList
           data={groups}
@@ -288,11 +286,6 @@ const HomeScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  loaderContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
   },
   list: {
     padding: 16,
