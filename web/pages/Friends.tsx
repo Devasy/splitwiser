@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowRight, Search, TrendingDown, TrendingUp, Users } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { FriendsSkeleton } from '../components/skeletons/FriendsSkeleton';
 import { EmptyState } from '../components/ui/EmptyState';
 import { THEMES } from '../constants';
 import { useTheme } from '../contexts/ThemeContext';
@@ -118,6 +119,10 @@ export const Friends = () => {
   };
 
   const isNeo = style === THEMES.NEOBRUTALISM;
+
+  if (loading) {
+    return <FriendsSkeleton />;
+  }
 
   return (
     <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-8 min-h-screen">
