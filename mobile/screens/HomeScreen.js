@@ -10,6 +10,7 @@ import {
   TextInput,
   useTheme,
 } from "react-native-paper";
+import GroupListSkeleton from "../components/skeletons/GroupListSkeleton";
 import HapticButton from '../components/ui/HapticButton';
 import HapticCard from '../components/ui/HapticCard';
 import { HapticAppbarAction } from '../components/ui/HapticAppbar';
@@ -257,9 +258,7 @@ const HomeScreen = ({ navigation }) => {
       </Appbar.Header>
 
       {isLoading ? (
-        <View style={styles.loaderContainer}>
-          <ActivityIndicator size="large" />
-        </View>
+        <GroupListSkeleton />
       ) : (
         <FlatList
           data={groups}
