@@ -6,6 +6,9 @@
 
 ## [Unreleased]
 
+### Changed
+- **Button Focus States:** Added consistent `focus-visible` styles to `Button` component and inline buttons (`Modal`, `Toast`, `Input`) for better keyboard navigation across both Neobrutalism and Glassmorphism themes.
+
 ### Added
 - **Password Strength Meter:** Added a visual password strength indicator to the signup form.
   - **Features:**

@@ -66,7 +66,7 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
             {/* Header */}
             <div className={`p-6 flex justify-between items-center ${style === THEMES.NEOBRUTALISM ? 'border-b-2 border-black bg-neo-main text-white' : 'border-b border-white/10 bg-white/5'}`}>
               <h3 id={titleId} className={`text-2xl font-bold ${style === THEMES.NEOBRUTALISM ? 'uppercase font-mono tracking-tighter' : ''}`}>{title}</h3>
-              <button type="button" onClick={onClose} className="hover:rotate-90 transition-transform duration-200" aria-label="Close modal">
+              <button type="button" onClick={onClose} className="hover:rotate-90 transition-transform duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white focus-visible:ring-offset-white dark:focus-visible:ring-offset-gray-900 rounded-sm" aria-label="Close modal">
                 <X size={24} />
               </button>
             </div>
