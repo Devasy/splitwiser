@@ -57,7 +57,7 @@ const ToastItem: React.FC<{ toast: Toast }> = ({ toast }) => {
       <button
         type="button"
         onClick={() => removeToast(toast.id)}
-        className="shrink-0 hover:opacity-70 transition-opacity"
+        className="shrink-0 hover:opacity-70 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-black dark:focus-visible:ring-white focus-visible:ring-offset-white dark:focus-visible:ring-offset-gray-900 rounded-sm"
         aria-label="Close notification"
       >
         <X className="w-4 h-4" />

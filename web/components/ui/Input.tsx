@@ -46,10 +46,10 @@ export const Input: React.FC<InputProps> = ({ label, error, className = '', type
           <button
             type="button"
             onClick={() => setShowPassword(!showPassword)}
-            className={`absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-md transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-offset-1 ${
+            className={`absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-md transition-opacity hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-gray-900 ${
               style === THEMES.NEOBRUTALISM
-                ? (mode === 'dark' ? 'text-white opacity-80 focus:ring-white' : 'text-black opacity-60 focus:ring-black')
-                : 'text-white/60 hover:text-white focus:ring-white/50'
+                ? (mode === 'dark' ? 'text-white opacity-80 focus-visible:ring-white' : 'text-black opacity-60 focus-visible:ring-black')
+                : 'text-white/60 hover:text-white focus-visible:ring-white/50'
             }`}
             aria-label={showPassword ? "Hide password" : "Show password"}
           >
