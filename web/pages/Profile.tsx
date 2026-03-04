@@ -3,6 +3,7 @@ import { Camera, ChevronRight, CreditCard, LogOut, Mail, MessageSquare, Settings
 import React, { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/Button';
+import { ImageCropper } from '../components/ui/ImageCropper';
 import { Input } from '../components/ui/Input';
 import { Modal } from '../components/ui/Modal';
 import { THEMES } from '../constants';
@@ -21,6 +22,8 @@ export const Profile = () => {
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [editName, setEditName] = useState(user?.name || '');
     const [pickedImage, setPickedImage] = useState<{ url: string; base64: string } | null>(null);
+    const [tempImageUrl, setTempImageUrl] = useState<string | null>(null);
+    const [isCropperOpen, setIsCropperOpen] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [saveError, setSaveError] = useState<string | null>(null);
 
@@ -42,9 +45,15 @@ export const Profile = () => {
         const reader = new FileReader();
         reader.onload = () => {
             const result = reader.result as string;
-            setPickedImage({ url: result, base64: result });
+            setTempImageUrl(result);
+            setIsCropperOpen(true);
         };
         reader.readAsDataURL(file);
+    };
+
+    const handleCropComplete = (croppedBase64: string) => {
+        setPickedImage({ url: croppedBase64, base64: croppedBase64 });
+        setTempImageUrl(null);
     };
 
     const handleSaveProfile = async () => {
@@ -315,6 +324,22 @@ export const Profile = () => {
                     />
                 </div>
             </Modal>
+
+            {/* Image Cropper Modal */}
+            {tempImageUrl && (
+                <ImageCropper
+                    isOpen={isCropperOpen}
+                    imageUrl={tempImageUrl}
+                    onClose={() => {
+                        setIsCropperOpen(false);
+                        setTempImageUrl(null);
+                        if (fileInputRef.current) {
+                            fileInputRef.current.value = '';
+                        }
+                    }}
+                    onCropComplete={handleCropComplete}
+                />
+            )}
         </div>
     );
 };

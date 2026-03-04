@@ -168,3 +168,8 @@
   - Completed: 2026-02-08
   - Files modified: `web/components/ui/PasswordStrength.tsx`, `web/pages/Auth.tsx`
   - Impact: Provides visual feedback on password complexity during signup
+
+- [x] **[ux]** Image upload with preview and crop
+  - Completed: 2026-02-23
+  - Files modified: `web/components/ui/ImageCropper.tsx`, `web/pages/Profile.tsx`
+  - Impact: Professional avatar upload experience with cropping
