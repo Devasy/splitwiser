@@ -7,6 +7,13 @@
 ## [Unreleased]
 
 ### Added
+- **Image Upload Cropper:** Added ability to preview and crop profile pictures before uploading.
+  - **Features:**
+    - Interactive circular cropper using `react-image-crop`.
+    - Integrated with existing Profile editing modal.
+    - Dual-theme support (Glassmorphism & Neobrutalism).
+  - **Technical:** Created `web/components/ui/ImageCropper.tsx`. Added `react-image-crop` dependency. Integrated into `web/pages/Profile.tsx`.
+
 - **Password Strength Meter:** Added a visual password strength indicator to the signup form.
   - **Features:**
     - Real-time strength calculation (Length, Uppercase, Lowercase, Number, Symbol).
