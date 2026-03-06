@@ -740,6 +740,28 @@ _Document errors and their solutions here as you encounter them._
 
 ---
 
+### ✅ Successful PR Pattern: Group Details Skeleton
+
+**Date:** 2026-03-06
+**Context:** Implementing robust loading states for complex pages
+
+**What was implemented:**
+1. Mapped the exact UI structure of `GroupDetails.tsx` (Hero, Cards, Tabs, Expenses).
+2. Created a cohesive `GroupDetailsSkeleton.tsx` utilizing `framer-motion` and the existing `Skeleton` UI primitive.
+3. Supported both Glassmorphism and Neobrutalism natively within the skeleton layouts.
+4. Integrated a mocked test script (`verify_group_details_skeleton.py`) using Playwright to forcefully delay API responses and visually verify the loading state.
+
+**Why it succeeded:**
+- ✅ Prevented jarring layout shifts on initial load by matching the final rendered layout's dimensions.
+- ✅ Respected the dual-theming system fully.
+- ✅ Leveraged Playwright's `route.fulfill({ delay })` to reliably capture and test infinite loading states locally.
+
+**Key learnings:**
+- When building composite skeletons, breaking them down into structural sub-components (like `SkeletonHero`, `SkeletonCards`, `SkeletonTabs`) makes the code much more maintainable.
+- Playwright is incredibly effective for verifying transient UI states (like loading) by intercepting and artificially delaying network requests.
+
+---
+
 ## Dependencies Reference
 
 ### Web
