@@ -7,6 +7,14 @@
 ## [Unreleased]
 
 ### Added
+- **Web Skeleton Loading:** Implemented comprehensive skeleton loading for the `GroupDetails` page.
+  - **Features:**
+    - Replaced the generic spinner with a skeleton layout perfectly matching the page's structure (Hero, Cards, Tabs, Expenses).
+    - Full dual-theme support (Glassmorphism & Neobrutalism) matching application colors.
+    - Smooth `framer-motion` pulsing animations on skeleton elements.
+    - Uses existing `Skeleton` UI primitive while orchestrating complex layouts.
+  - **Technical:** Created `web/components/skeletons/GroupDetailsSkeleton.tsx`. Integrated into `web/pages/GroupDetails.tsx`.
+
 - **Password Strength Meter:** Added a visual password strength indicator to the signup form.
   - **Features:**
     - Real-time strength calculation (Length, Uppercase, Lowercase, Number, Symbol).

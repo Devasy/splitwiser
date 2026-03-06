@@ -57,6 +57,13 @@
   - Impact: Native feel, users can easily refresh data
   - Size: ~150 lines
 
+- [x] **[ux]** Complete skeleton loading for GroupDetails page
+  - Completed: 2026-03-06
+  - Files modified: `web/pages/GroupDetails.tsx`, `web/components/skeletons/GroupDetailsSkeleton.tsx`
+  - Context: Replace ActivityIndicator with skeleton layout matching content
+  - Impact: Better loading experience, less jarring layout shift
+  - Size: ~120 lines
+
 - [ ] **[ux]** Complete skeleton loading for HomeScreen groups
   - File: `mobile/screens/HomeScreen.js`
   - Context: Replace ActivityIndicator with skeleton group cards

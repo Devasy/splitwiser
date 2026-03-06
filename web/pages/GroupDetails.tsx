@@ -7,6 +7,7 @@ import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Modal } from '../components/ui/Modal';
 import { Skeleton } from '../components/ui/Skeleton';
+import { GroupDetailsSkeleton } from '../components/skeletons/GroupDetailsSkeleton';
 import { CURRENCIES, THEMES } from '../constants';
 import { useAuth } from '../contexts/AuthContext';
 import { useConfirm } from '../contexts/ConfirmContext';
@@ -561,7 +562,7 @@ export const GroupDetails = () => {
         if (user) setPayerId(user._id);
     };
 
-    if (loading && !group) return <div className="p-8"><Skeleton className="h-64 w-full" /></div>;
+    if (loading && !group) return <GroupDetailsSkeleton />;
     if (!group) return <div className="p-8">Group not found</div>;
 
     return (
